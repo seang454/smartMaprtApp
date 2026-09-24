@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/01. SmallMartApp.Core/">
+    <Project Path="src/01. SmallMartApp.Core/SmallMartApp.Core.csproj" />
+  </Folder>
+  <Folder Name="/src/02. SmallMartApp.Infrastructure/">
+    <Project Path="src/02. SmallMartApp.Infrastructure/SmallMartApp.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/03. SmallMartApp.UI/">
+    <Project Path="src/03. SmallMartApp.UI/SmallMartApp.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SmallMartApp.Tests/SmallMartApp.Tests.csproj" />
+  </Folder>
+</Solution>

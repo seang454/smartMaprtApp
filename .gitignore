@@ -1,0 +1,23 @@
+﻿## Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio & VS Code cache
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Local SQLite Database
+*.db
+*.db-shm
+*.db-wal
+
+## Windows temp files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
