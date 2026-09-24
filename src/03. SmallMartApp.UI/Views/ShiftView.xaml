@@ -1,0 +1,74 @@
+﻿<UserControl x:Class="SmallMartApp.UI.Views.ShiftView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:vm="clr-namespace:SmallMartApp.UI.ViewModels"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=vm:ShiftViewModel}"
+             Background="#F8FAFC">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="🕒 Cashier Shift &amp; Drawer Reconciliation" FontSize="26" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,16"/>
+
+        <!-- Shift Operations Card -->
+        <Border Grid.Row="1" Background="White" CornerRadius="12" Padding="20" Margin="0,0,0,20" BorderBrush="#E2E8F0" BorderThickness="1">
+            <StackPanel>
+                <TextBlock Text="Shift Status &amp; Cash Drawer" FontWeight="Bold" FontSize="16" Foreground="#1E293B" Margin="0,0,0,12"/>
+                
+                <WrapPanel Orientation="Horizontal" Margin="0,0,0,12">
+                    <!-- Open Shift Box -->
+                    <Border Background="#F1F5F9" CornerRadius="8" Padding="16" Width="360" Margin="0,0,16,0">
+                        <StackPanel>
+                            <TextBlock Text="Start New Shift" FontWeight="Bold" FontSize="14" Foreground="#2563EB" Margin="0,0,0,8"/>
+                            <TextBlock Text="Starting Drawer Float ($):" FontSize="12" Foreground="#64748B"/>
+                            <TextBox Text="{Binding StartingCashInput, UpdateSourceTrigger=PropertyChanged}" FontSize="16" Padding="6,4" Margin="0,4,0,10"/>
+                            <Button Content="🟢 Open Shift" Command="{Binding OpenShiftCommand}" Background="#16A34A" Foreground="White" FontWeight="Bold" Padding="12,8" BorderThickness="0" Cursor="Hand"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Close Shift Box -->
+                    <Border Background="#F1F5F9" CornerRadius="8" Padding="16" Width="360">
+                        <StackPanel>
+                            <TextBlock Text="Close Active Shift" FontWeight="Bold" FontSize="14" Foreground="#DC2626" Margin="0,0,0,8"/>
+                            <TextBlock Text="Counted Actual Cash ($):" FontSize="12" Foreground="#64748B"/>
+                            <TextBox Text="{Binding ActualCashInput, UpdateSourceTrigger=PropertyChanged}" FontSize="16" Padding="6,4" Margin="0,4,0,10"/>
+                            <Button Content="🔴 Close Shift &amp; Reconcile" Command="{Binding CloseShiftCommand}" Background="#DC2626" Foreground="White" FontWeight="Bold" Padding="12,8" BorderThickness="0" Cursor="Hand"/>
+                        </StackPanel>
+                    </Border>
+                </WrapPanel>
+
+                <TextBlock Text="{Binding StatusMessage}" Foreground="#E67E22" FontWeight="SemiBold" FontSize="13"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Past Shifts Table -->
+        <Border Grid.Row="2" Background="White" CornerRadius="12" Padding="16" BorderBrush="#E2E8F0" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="Past Cashier Shift Audit Log" FontSize="16" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,12"/>
+                <DataGrid Grid.Row="1" ItemsSource="{Binding RecentShifts}" AutoGenerateColumns="False" CanUserAddRows="False"
+                          GridLinesVisibility="Horizontal" HeadersVisibility="Column" Background="White" RowHeight="42" BorderThickness="0">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Shift #" Binding="{Binding Id}" Width="80"/>
+                        <DataGridTextColumn Header="Cashier" Binding="{Binding User.FullName}" Width="150" FontWeight="SemiBold"/>
+                        <DataGridTextColumn Header="Start Time" Binding="{Binding StartTime, StringFormat=yyyy-MM-dd HH:mm}" Width="150"/>
+                        <DataGridTextColumn Header="End Time" Binding="{Binding EndTime, StringFormat=yyyy-MM-dd HH:mm}" Width="150"/>
+                        <DataGridTextColumn Header="Start Float" Binding="{Binding StartingCash, StringFormat=${0:F2}}" Width="110"/>
+                        <DataGridTextColumn Header="Expected Cash" Binding="{Binding ExpectedCash, StringFormat=${0:F2}}" Width="120" FontWeight="Bold"/>
+                        <DataGridTextColumn Header="Actual Cash" Binding="{Binding ActualCash, StringFormat=${0:F2}}" Width="110"/>
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

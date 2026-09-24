@@ -17,7 +17,13 @@ public class SalesService : ISalesService
         _receiptPrinter = receiptPrinter;
     }
 
-    public async Task<Result<Sale>> ProcessSaleAsync(List<(int ProductId, int Quantity)> items, decimal cashReceived)
+    public async Task<Result<Sale>> ProcessSaleAsync(
+        List<(int ProductId, int Quantity)> items, 
+        decimal cashReceived, 
+        int? shiftId = null, 
+        int? customerId = null, 
+        decimal discountAmount = 0m, 
+        PaymentMethod paymentMethod = PaymentMethod.Cash)
     {
         if (items == null || items.Count == 0)
             return Result<Sale>.Failure("Cart is empty.");
@@ -27,7 +33,7 @@ public class SalesService : ISalesService
             .Where(p => productIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id);
 
-        decimal totalAmount = 0m;
+        decimal subtotalAmount = 0m;
         var saleItems = new List<SaleItem>();
         var receiptPrintItems = new List<(string ItemName, int Qty, decimal Price, decimal Subtotal)>();
 
@@ -41,8 +47,8 @@ public class SalesService : ISalesService
 
             product.StockQuantity -= item.Quantity;
 
-            decimal subtotal = item.Quantity * product.SellPrice;
-            totalAmount += subtotal;
+            decimal lineSubtotal = item.Quantity * product.SellPrice;
+            subtotalAmount += lineSubtotal;
 
             saleItems.Add(new SaleItem
             {
@@ -52,28 +58,45 @@ public class SalesService : ISalesService
                 UnitPrice = product.SellPrice
             });
 
-            receiptPrintItems.Add((product.Name, item.Quantity, product.SellPrice, subtotal));
+            receiptPrintItems.Add((product.Name, item.Quantity, product.SellPrice, lineSubtotal));
         }
 
-        if (cashReceived < totalAmount)
-            return Result<Sale>.Failure($"Insufficient cash. Required: ${totalAmount:F2}, Received: ${cashReceived:F2}");
+        decimal finalTotal = Math.Max(0, subtotalAmount - discountAmount);
 
-        decimal changeGiven = cashReceived - totalAmount;
+        if (paymentMethod == PaymentMethod.Cash && cashReceived < finalTotal)
+            return Result<Sale>.Failure($"Insufficient cash. Required: ${finalTotal:F2}, Received: ${cashReceived:F2}");
+
+        decimal changeGiven = paymentMethod == PaymentMethod.Cash ? Math.Max(0, cashReceived - finalTotal) : 0m;
         string receiptNumber = $"REC-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}";
 
         var sale = new Sale
         {
             ReceiptNumber = receiptNumber,
-            TotalAmount = totalAmount,
-            CashReceived = cashReceived,
+            ShiftId = shiftId,
+            CustomerId = customerId,
+            TotalAmount = finalTotal,
+            DiscountAmount = discountAmount,
+            CashReceived = paymentMethod == PaymentMethod.Cash ? cashReceived : finalTotal,
             ChangeGiven = changeGiven,
+            PaymentMethod = paymentMethod,
             Items = saleItems
         };
 
         await _context.Sales.AddAsync(sale);
+
+        // Award loyalty points to customer (1 point per whole $ spent)
+        if (customerId.HasValue && customerId.Value > 0)
+        {
+            var customer = await _context.Customers.FindAsync(customerId.Value);
+            if (customer != null)
+            {
+                customer.Points += (int)finalTotal;
+            }
+        }
+
         await _context.SaveChangesAsync();
 
-        _ = _receiptPrinter.PrintReceiptAsync("Small Mart Kiosk", receiptNumber, receiptPrintItems, totalAmount, cashReceived, changeGiven);
+        _ = _receiptPrinter.PrintReceiptAsync("Smart Mart Kiosk", receiptNumber, receiptPrintItems, finalTotal, cashReceived, changeGiven);
 
         return Result<Sale>.Success(sale);
     }
@@ -82,6 +105,7 @@ public class SalesService : ISalesService
     {
         return await _context.Sales
             .Include(s => s.Items)
+            .Include(s => s.Customer)
             .OrderByDescending(s => s.CreatedAt)
             .Take(count)
             .ToListAsync();

@@ -6,82 +6,110 @@
              xmlns:vm="clr-namespace:SmallMartApp.UI.ViewModels"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:ProductListViewModel}"
-             d:DesignHeight="600" d:DesignWidth="900" Background="#F8F9FA">
-    <Grid Margin="16">
+             Background="#F8FAFC">
+    <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="📦 Inventory &amp; Stock Management" FontSize="20" FontWeight="Bold" Margin="0,0,0,16" Foreground="#2C3E50"/>
+        <!-- Top Header & Filter Bar -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+            <TextBlock Grid.Column="0" Text="Inventory Management" FontSize="26" FontWeight="Bold" Foreground="#0F172A" VerticalAlignment="Center"/>
+
+            <Border Grid.Column="1" HorizontalAlignment="Right" Background="White" CornerRadius="8" 
+                    BorderBrush="#CBD5E1" BorderThickness="1" Margin="0,0,12,0" Padding="12,6" Width="260">
+                <DockPanel>
+                    <TextBlock Text="🔍 " Foreground="#94A3B8" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" 
+                             BorderThickness="0" Background="Transparent" FontSize="14" VerticalContentAlignment="Center"/>
+                </DockPanel>
+            </Border>
+
+            <ComboBox Grid.Column="2" ItemsSource="{Binding Categories}" DisplayMemberPath="Name" 
+                      SelectedItem="{Binding SelectedCategory}" Width="150" Height="38" Margin="0,0,12,0" 
+                      VerticalContentAlignment="Center"/>
+
+            <Button Grid.Column="3" Content="🔄 Refresh" Command="{Binding LoadProductsCommand}" 
+                    Background="#3B82F6" Foreground="White" FontWeight="SemiBold" Padding="14,8" BorderThickness="0" Cursor="Hand"/>
+        </Grid>
+
+        <!-- Inline Quick Add Product Form -->
+        <Border Grid.Row="1" Background="White" CornerRadius="10" Padding="16" Margin="0,0,0,16" BorderBrush="#E2E8F0" BorderThickness="1">
             <StackPanel>
-                <TextBlock Text="Add New Product" FontWeight="Bold" FontSize="15" Margin="0,0,0,10" Foreground="#34495E"/>
-                <WrapPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <StackPanel Margin="0,0,12,0" Width="140">
-                        <TextBlock Text="Barcode:" FontSize="12" Foreground="#7F8C8D"/>
+                <TextBlock Text="➕ Add New Product" FontWeight="Bold" FontSize="14" Foreground="#334155" Margin="0,0,0,8"/>
+                <WrapPanel Orientation="Horizontal">
+                    <StackPanel Width="140" Margin="0,0,10,0">
+                        <TextBlock Text="Barcode:" FontSize="11" Foreground="#64748B"/>
                         <TextBox Text="{Binding NewBarcode, UpdateSourceTrigger=PropertyChanged}" Padding="6,4"/>
                     </StackPanel>
-                    <StackPanel Margin="0,0,12,0" Width="220">
-                        <TextBlock Text="Product Name:" FontSize="12" Foreground="#7F8C8D"/>
+                    <StackPanel Width="220" Margin="0,0,10,0">
+                        <TextBlock Text="Product Name:" FontSize="11" Foreground="#64748B"/>
                         <TextBox Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}" Padding="6,4"/>
                     </StackPanel>
-                    <StackPanel Margin="0,0,12,0" Width="90">
-                        <TextBlock Text="Cost Price ($):" FontSize="12" Foreground="#7F8C8D"/>
+                    <StackPanel Width="140" Margin="0,0,10,0">
+                        <TextBlock Text="Category:" FontSize="11" Foreground="#64748B"/>
+                        <ComboBox ItemsSource="{Binding Categories}" DisplayMemberPath="Name" SelectedItem="{Binding NewProductCategory}" Height="28"/>
+                    </StackPanel>
+                    <StackPanel Width="80" Margin="0,0,10,0">
+                        <TextBlock Text="Cost ($):" FontSize="11" Foreground="#64748B"/>
                         <TextBox Text="{Binding NewCostPrice, UpdateSourceTrigger=PropertyChanged}" Padding="6,4"/>
                     </StackPanel>
-                    <StackPanel Margin="0,0,12,0" Width="90">
-                        <TextBlock Text="Sell Price ($):" FontSize="12" Foreground="#7F8C8D"/>
+                    <StackPanel Width="80" Margin="0,0,10,0">
+                        <TextBlock Text="Sell ($):" FontSize="11" Foreground="#64748B"/>
                         <TextBox Text="{Binding NewSellPrice, UpdateSourceTrigger=PropertyChanged}" Padding="6,4"/>
                     </StackPanel>
-                    <StackPanel Margin="0,0,12,0" Width="90">
-                        <TextBlock Text="Stock Qty:" FontSize="12" Foreground="#7F8C8D"/>
+                    <StackPanel Width="80" Margin="0,0,10,0">
+                        <TextBlock Text="Stock:" FontSize="11" Foreground="#64748B"/>
                         <TextBox Text="{Binding NewStockQuantity, UpdateSourceTrigger=PropertyChanged}" Padding="6,4"/>
                     </StackPanel>
-                    <Button Content="➕ Add Product" Command="{Binding AddProductCommand}" 
-                            Background="#27AE60" Foreground="White" FontWeight="Bold" 
-                            Padding="16,8" VerticalAlignment="Bottom" Cursor="Hand" BorderThickness="0"/>
+                    <Button Content="Save Product" Command="{Binding AddProductCommand}" 
+                            Background="#16A34A" Foreground="White" FontWeight="Bold" 
+                            Padding="16,6" VerticalAlignment="Bottom" Cursor="Hand" BorderThickness="0"/>
                 </WrapPanel>
-                <TextBlock Text="{Binding StatusMessage}" Foreground="#E67E22" FontWeight="SemiBold" FontSize="12"/>
+                <TextBlock Text="{Binding StatusMessage}" Foreground="#E67E22" FontSize="12" Margin="0,6,0,0"/>
             </StackPanel>
         </Border>
 
-        <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="16">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                    <TextBlock Text="Current Stock List" FontWeight="Bold" FontSize="15" VerticalAlignment="Center" Foreground="#34495E"/>
-                    <Button Content="🔄 Refresh Stock" Command="{Binding LoadProductsCommand}" DockPanel.Dock="Right" HorizontalAlignment="Right" 
-                            Padding="12,4" Background="#3498DB" Foreground="White" BorderThickness="0" Cursor="Hand"/>
-                </DockPanel>
-
-                <DataGrid Grid.Row="1" ItemsSource="{Binding Products}" AutoGenerateColumns="False" 
-                          CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                          Background="White" RowHeight="36" FontSize="14">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="130" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Product Name" Binding="{Binding Name}" Width="*" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Cost Price" Binding="{Binding CostPrice, StringFormat=${0:F2}}" Width="90" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Sell Price" Binding="{Binding SellPrice, StringFormat=${0:F2}}" Width="90" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Stock Available" Binding="{Binding StockQuantity}" Width="110" IsReadOnly="True"/>
-                        <DataGridTemplateColumn Header="Action" Width="70">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Button Content="Delete" Command="{Binding DataContext.DeleteProductCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
-                                            CommandParameter="{Binding}" Background="#E74C3C" Foreground="White" Padding="6,2" BorderThickness="0" Cursor="Hand" FontSize="11"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-            </Grid>
+        <!-- Product Table Matching Image -->
+        <Border Grid.Row="2" Background="White" CornerRadius="12" Padding="16" BorderBrush="#E2E8F0" BorderThickness="1">
+            <DataGrid ItemsSource="{Binding Products}" AutoGenerateColumns="False" CanUserAddRows="False"
+                      GridLinesVisibility="Horizontal" HeadersVisibility="Column" Background="White" RowHeight="44" BorderThickness="0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
+                    <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="130" FontWeight="SemiBold"/>
+                    <DataGridTextColumn Header="Product Name" Binding="{Binding Name}" Width="*" FontWeight="SemiBold"/>
+                    <DataGridTextColumn Header="Category" Binding="{Binding Category.Name}" Width="110"/>
+                    <DataGridTextColumn Header="Cost Price" Binding="{Binding CostPrice, StringFormat=${0:F2}}" Width="90"/>
+                    <DataGridTextColumn Header="Sell Price" Binding="{Binding SellPrice, StringFormat=${0:F2}}" Width="90" FontWeight="Bold"/>
+                    <DataGridTextColumn Header="Stock Quantity" Binding="{Binding StockQuantity}" Width="110"/>
+                    <DataGridTemplateColumn Header="Status" Width="130">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="8" Padding="8,3" HorizontalAlignment="Left" Background="#DCFCE7">
+                                    <TextBlock Text="In Stock" Foreground="#15803D" FontWeight="Bold" FontSize="11"/>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Actions" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="🗑️" Command="{Binding DataContext.DeleteProductCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}" Background="Transparent" BorderThickness="0" Cursor="Hand" ToolTip="Delete Product"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
         </Border>
     </Grid>
 </UserControl>

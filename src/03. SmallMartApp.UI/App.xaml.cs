@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SmallMartApp.Infrastructure;
@@ -17,20 +18,38 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "smallmart.db");
-
         _host = Host.CreateDefaultBuilder()
+            .ConfigureAppConfiguration((hostingContext, config) =>
+            {
+                config.SetBasePath(AppDomain.CurrentDomain.BaseDirectory);
+                config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            })
             .ConfigureServices((context, services) =>
             {
-                services.AddInfrastructure(dbPath);
+                string connectionString = context.Configuration.GetConnectionString("DefaultConnection") 
+                    ?? DependencyInjection.DefaultSqlServerConnection;
+
+                // Register Infrastructure & Services
+                services.AddInfrastructure(connectionString);
+
+                // Register all UI ViewModels
+                services.AddSingleton<DashboardViewModel>();
                 services.AddSingleton<PosCheckoutViewModel>();
                 services.AddSingleton<ProductListViewModel>();
+                services.AddSingleton<CategoryViewModel>();
+                services.AddSingleton<CustomerViewModel>();
+                services.AddSingleton<SupplierViewModel>();
+                services.AddSingleton<ShiftViewModel>();
+                services.AddSingleton<MainViewModel>();
+
+                // Register Shell Window
                 services.AddSingleton<MainWindow>();
             })
             .Build();
 
         await _host.StartAsync();
 
+        // Ensure SQL Server database & seed data are initialized
         using (var scope = _host.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<SmallMartDbContext>();

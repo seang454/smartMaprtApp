@@ -5,10 +5,9 @@ namespace SmallMartApp.UI;
 
 public partial class MainWindow : Window
 {
-    public MainWindow(PosCheckoutViewModel posVm, ProductListViewModel inventoryVm)
+    public MainWindow(MainViewModel mainVm)
     {
         InitializeComponent();
-        PosView.DataContext = posVm;
-        InventoryView.DataContext = inventoryVm;
+        DataContext = mainVm;
     }
 }

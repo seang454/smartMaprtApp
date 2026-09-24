@@ -17,6 +17,8 @@ public class ProductService : IProductService
     public async Task<List<Product>> GetAllAsync()
     {
         return await _context.Products
+            .Include(p => p.Category)
+            .Include(p => p.Supplier)
             .Where(p => p.IsActive)
             .OrderBy(p => p.Name)
             .ToListAsync();
@@ -26,6 +28,7 @@ public class ProductService : IProductService
     {
         if (string.IsNullOrWhiteSpace(barcode)) return null;
         return await _context.Products
+            .Include(p => p.Category)
             .FirstOrDefaultAsync(p => p.Barcode == barcode.Trim() && p.IsActive);
     }
 
@@ -47,13 +50,9 @@ public class ProductService : IProductService
             return Result<Product>.Failure($"A product with barcode '{product.Barcode}' already exists.");
 
         if (product.Id == 0)
-        {
             await _context.Products.AddAsync(product);
-        }
         else
-        {
             _context.Products.Update(product);
-        }
 
         await _context.SaveChangesAsync();
         return Result<Product>.Success(product);
