@@ -3,102 +3,206 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:views="clr-namespace:SmallMartApp.UI.Views"
-        xmlns:vm="clr-namespace:SmallMartApp.UI.ViewModels"
         mc:Ignorable="d"
         Title="Smart Mart Management System" 
         Height="800" Width="1280" MinHeight="680" MinWidth="1020"
-        WindowStartupLocation="CenterScreen" Background="#F8FAFC">
+        WindowStartupLocation="CenterScreen" Background="#F8FAFC"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        RenderOptions.ClearTypeHint="Enabled">
 
     <Window.Resources>
-        <!-- DataTemplates for MVVM view switching -->
-        <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
-            <views:DashboardView />
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:PosCheckoutViewModel}">
-            <views:PosCheckoutView />
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:ProductListViewModel}">
-            <views:ProductListView />
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:CategoryViewModel}">
-            <views:CategoryView />
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:CustomerViewModel}">
-            <views:CustomerView />
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:SupplierViewModel}">
-            <views:SupplierView />
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:ShiftViewModel}">
-            <views:ShiftView />
-        </DataTemplate>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+
+        <!-- Modern Sidebar Nav Button Style -->
+        <Style x:Key="SidebarNavButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#94A3B8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="navBorder" Background="{TemplateBinding Background}" 
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="navBorder" Property="Background" Value="#1E293B"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="navBorder" Property="Background" Value="#334155"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <!-- Sidebar: Width 230 -->
-            <ColumnDefinition Width="230"/>
+            <!-- Modern Sidebar: Width 260 -->
+            <ColumnDefinition Width="260"/>
             <!-- Main Content: Width * -->
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- LEFT SIDEBAR: Dark Navy -->
-        <Border Grid.Column="0" Background="#0F172A">
+        <!-- LEFT SIDEBAR: Ultra-Modern Dark Slate -->
+        <Border Grid.Column="0" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="0,0,1,0">
             <Grid>
                 <Grid.RowDefinitions>
+                    <!-- Brand -->
                     <RowDefinition Height="Auto"/>
+                    <!-- Menu Navigation -->
                     <RowDefinition Height="*"/>
+                    <!-- Footer Info & Status -->
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Brand Header -->
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="20,24,20,24">
-                    <TextBlock Text="🏪" FontSize="26" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="SMART MART" FontSize="16" FontWeight="Bold" Foreground="White"/>
-                        <TextBlock Text="POS &amp; Inventory" FontSize="11" Foreground="#94A3B8"/>
-                    </StackPanel>
+                <!-- 1. Brand Logo Header -->
+                <StackPanel Grid.Row="0" Margin="18,22,18,16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Brand Icon Box -->
+                        <Border Grid.Column="0" Background="#2563EB" CornerRadius="10" Width="38" Height="38" Margin="0,0,12,0">
+                            <TextBlock Text="🏪" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <!-- App Title & Subtitle -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="SMART MART" FontSize="15" FontWeight="ExtraBold" Foreground="White"/>
+                            <TextBlock Text="POS &amp; Inventory ERP" FontSize="11" Foreground="#64748B" FontWeight="Medium"/>
+                        </StackPanel>
+
+                        <!-- Role Badge -->
+                        <Border Grid.Column="2" Background="#1E293B" CornerRadius="6" Padding="6,2" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding CurrentUser.Role, FallbackValue='ACTIVE'}" FontSize="10" FontWeight="Bold" Foreground="#38BDF8"/>
+                        </Border>
+                    </Grid>
+
+                    <!-- Subtle Horizontal Separator -->
+                    <Border Height="1" Background="#1E293B" Margin="0,18,0,0"/>
                 </StackPanel>
 
-                <!-- Navigation Menu Buttons -->
-                <StackPanel Grid.Row="1" Margin="12,0">
-                    <Button Content="📊  Dashboard" Command="{Binding NavigateToDashboardCommand}" 
-                            HorizontalContentAlignment="Left" Padding="14,10" Margin="0,0,0,4"
-                            Background="#1E293B" Foreground="White" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"/>
+                <!-- 2. Grouped Menu Navigation -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="14,0">
+                        <!-- Section: Operations -->
+                        <TextBlock Text="OPERATIONS" FontSize="10" FontWeight="Bold" Foreground="#475569" Margin="10,6,0,6"/>
+                        
+                        <!-- Dashboard: Admin / Manager only -->
+                        <Button Content="📊   Dashboard" Command="{Binding NavigateToDashboardCommand}" 
+                                Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVisConverter}}"
+                                Style="{StaticResource SidebarNavButtonStyle}"/>
 
-                    <Button Content="🛒  POS Checkout" Command="{Binding NavigateToPosCommand}" 
-                            HorizontalContentAlignment="Left" Padding="14,10" Margin="0,0,0,4"
-                            Background="Transparent" Foreground="#CBD5E1" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"/>
+                        <!-- POS Terminal: All roles -->
+                        <Button Content="🛒   POS Terminal" Command="{Binding NavigateToPosCommand}" 
+                                Style="{StaticResource SidebarNavButtonStyle}"/>
 
-                    <Button Content="📦  Products &amp; Stock" Command="{Binding NavigateToProductsCommand}" 
-                            HorizontalContentAlignment="Left" Padding="14,10" Margin="0,0,0,4"
-                            Background="Transparent" Foreground="#CBD5E1" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"/>
+                        <!-- Purchases & Receipts: Available to all roles -->
+                        <Button Content="🧾   Purchases &amp; Receipts" Command="{Binding NavigateToCustomerPurchasesCommand}" 
+                                Style="{StaticResource SidebarNavButtonStyle}"/>
 
-                    <Button Content="🏷️  Categories" Command="{Binding NavigateToCategoriesCommand}" 
-                            HorizontalContentAlignment="Left" Padding="14,10" Margin="0,0,0,4"
-                            Background="Transparent" Foreground="#CBD5E1" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"/>
+                        <!-- Customer Loyalty: Available to all roles for registering shoppers -->
+                        <Button Content="👥   Customer Loyalty" Command="{Binding NavigateToCustomersCommand}" 
+                                Style="{StaticResource SidebarNavButtonStyle}"/>
 
-                    <Button Content="👥  Customer Loyalty" Command="{Binding NavigateToCustomersCommand}" 
-                            HorizontalContentAlignment="Left" Padding="14,10" Margin="0,0,0,4"
-                            Background="Transparent" Foreground="#CBD5E1" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"/>
+                        <!-- Products & Stock: Available to all (Cashiers read-only) -->
+                        <Button Content="📦   Products &amp; Stock" Command="{Binding NavigateToProductsCommand}" 
+                                Style="{StaticResource SidebarNavButtonStyle}"/>
 
-                    <Button Content="🚚  Suppliers" Command="{Binding NavigateToSuppliersCommand}" 
-                            HorizontalContentAlignment="Left" Padding="14,10" Margin="0,0,0,4"
-                            Background="Transparent" Foreground="#CBD5E1" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"/>
+                        <!-- Categories: Admin / Manager only -->
+                        <Button Content="🏷️   Categories" Command="{Binding NavigateToCategoriesCommand}" 
+                                Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVisConverter}}"
+                                Style="{StaticResource SidebarNavButtonStyle}"/>
 
-                    <Button Content="🕒  Cashier Shift" Command="{Binding NavigateToShiftsCommand}" 
-                            HorizontalContentAlignment="Left" Padding="14,10" Margin="0,0,0,4"
-                            Background="Transparent" Foreground="#CBD5E1" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand"/>
-                </StackPanel>
+                        <!-- Section: Administration (Manager only) -->
+                        <StackPanel Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVisConverter}}">
+                            <TextBlock Text="ADMINISTRATION" FontSize="10" FontWeight="Bold" Foreground="#475569" Margin="10,18,0,6"/>
 
-                <!-- Footer Status -->
-                <Border Grid.Row="2" Background="#1E293B" Padding="16,12" Margin="12,0,12,16" CornerRadius="8">
-                    <StackPanel>
-                        <TextBlock Text="SQL Server Connected" Foreground="#10B981" FontWeight="Bold" FontSize="11"/>
-                        <TextBlock Text="localhost\SQLEXPRESS" Foreground="#64748B" FontSize="10"/>
+                            <Button Content="🚚   Suppliers &amp; Orders" Command="{Binding NavigateToSuppliersCommand}" 
+                                    Style="{StaticResource SidebarNavButtonStyle}"/>
+
+                            <Button Content="🛡️   Staff &amp; Users" Command="{Binding NavigateToUsersCommand}" 
+                                    Style="{StaticResource SidebarNavButtonStyle}"/>
+                        </StackPanel>
+
+                        <!-- Section: Shifts & Staff Audits -->
+                        <TextBlock Text="AUDIT &amp; SHIFTS" FontSize="10" FontWeight="Bold" Foreground="#475569" Margin="10,18,0,6"/>
+                        
+                        <!-- For Admin: Staff Shifts & Audits -->
+                        <Button Content="👥   Staff Shifts &amp; Audit" Command="{Binding NavigateToShiftsCommand}" 
+                                Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVisConverter}}"
+                                Style="{StaticResource SidebarNavButtonStyle}"/>
+
+                        <!-- For Cashier: My Shift & Drawer -->
+                        <Button Content="🕒   Cashier Shift &amp; Drawer" Command="{Binding NavigateToShiftsCommand}" 
+                                Visibility="{Binding IsCashier, Converter={StaticResource BoolToVisConverter}}"
+                                Style="{StaticResource SidebarNavButtonStyle}"/>
                     </StackPanel>
-                </Border>
+                </ScrollViewer>
+
+                <!-- 3. Footer: Logout Button & DB Status Indicator -->
+                <StackPanel Grid.Row="2" Margin="14,10,14,14">
+                    <!-- Modern Log Out Button -->
+                    <Button Content="🚪   Log Out" 
+                            Command="{Binding LogoutCommand}"
+                            Style="{StaticResource SidebarNavButtonStyle}"
+                            Foreground="#F87171"
+                            Margin="0,0,0,8"/>
+
+                    <Border Height="1" Background="#1E293B" Margin="0,0,0,10"/>
+
+                    <!-- Minimal Status Indicator (Green = Connected, Red = Disconnected) -->
+                    <Border Background="Transparent" Padding="4,0" ToolTip="SQL Server Express (localhost\SQLEXPRESS)">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- Glowing LED Status Dot -->
+                            <Ellipse Width="8" Height="8" Margin="0,0,8,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="#10B981"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDatabaseConnected}" Value="False">
+                                                <Setter Property="Fill" Value="#EF4444"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+
+                            <!-- Status Label -->
+                            <TextBlock FontSize="11" FontWeight="Medium">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="Connected"/>
+                                        <Setter Property="Foreground" Value="#94A3B8"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsDatabaseConnected}" Value="False">
+                                                <Setter Property="Text" Value="Disconnected"/>
+                                                <Setter Property="Foreground" Value="#EF4444"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </Grid>
         </Border>
 
@@ -113,15 +217,67 @@
             <Border Grid.Row="0" Background="White" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="24,0">
                 <DockPanel LastChildFill="False">
                     <TextBlock Text="Smart Mart Manager" FontSize="18" FontWeight="Bold" Foreground="#0F172A" VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                    
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Right">
-                        <TextBlock Text="👤 Logged in as: " FontSize="13" Foreground="#64748B" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding CurrentUserName}" FontWeight="Bold" FontSize="13" Foreground="#2563EB" VerticalAlignment="Center"/>
+                        <Border Background="#F1F5F9" CornerRadius="8" Padding="12,6" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="👤 " FontSize="12" VerticalAlignment="Center"/>
+                                <TextBlock Text="User: " FontSize="12" Foreground="#64748B" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding CurrentUserName}" FontWeight="Bold" FontSize="12" Foreground="#2563EB" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Content="Log Out" Command="{Binding LogoutCommand}"
+                                Padding="12,6" FontSize="12" FontWeight="SemiBold"
+                                Background="#FEF2F2" Foreground="#DC2626" BorderBrush="#FECACA" BorderThickness="1"
+                                Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="6"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
                     </StackPanel>
                 </DockPanel>
             </Border>
 
             <!-- DYNAMIC SCREEN CONTENT -->
             <ContentControl Grid.Row="1" Content="{Binding CurrentView}"/>
+
+            <!-- FLOATING TOAST ALERT NOTIFICATION OVERLAY -->
+            <Border Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top" 
+                    Margin="0,16,24,0" CornerRadius="10" BorderThickness="1.5"
+                    BorderBrush="{Binding ToastBorderBrush}"
+                    Background="{Binding ToastBackground}"
+                    Visibility="{Binding IsToastVisible, Converter={StaticResource BoolToVisConverter}}"
+                    MaxWidth="450" MinWidth="320" Panel.ZIndex="9999"
+                    Padding="14,12">
+                <Border.Effect>
+                    <DropShadowEffect Color="#0F172A" BlurRadius="20" ShadowDepth="4" Opacity="0.18" Direction="270"/>
+                </Border.Effect>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Icon -->
+                    <TextBlock Grid.Column="0" Text="{Binding ToastIcon}" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                    <!-- Title & Message Content -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding ToastTitle}" FontWeight="Bold" FontSize="13" Foreground="{Binding ToastForeground}"/>
+                        <TextBlock Text="{Binding ToastMessage}" FontSize="12" Foreground="{Binding ToastForeground}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <!-- Dismiss button -->
+                    <Button Grid.Column="2" Content="✕" Command="{Binding DismissToastCommand}"
+                            Background="Transparent" BorderThickness="0" Foreground="{Binding ToastForeground}"
+                            FontWeight="Bold" FontSize="13" Cursor="Hand" Margin="8,0,0,0" VerticalAlignment="Top"
+                            Padding="4"/>
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
 </Window>

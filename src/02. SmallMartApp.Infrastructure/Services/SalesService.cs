@@ -1,6 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SmallMartApp.Core.Common;
 using SmallMartApp.Core.Features.Sales;
+using SmallMartApp.Core.Features.Shifts;
 using SmallMartApp.Core.Hardware;
 using SmallMartApp.Infrastructure.Persistence;
 
@@ -23,7 +24,8 @@ public class SalesService : ISalesService
         int? shiftId = null, 
         int? customerId = null, 
         decimal discountAmount = 0m, 
-        PaymentMethod paymentMethod = PaymentMethod.Cash)
+        PaymentMethod paymentMethod = PaymentMethod.Cash,
+        int pointsRedeemed = 0)
     {
         if (items == null || items.Count == 0)
             return Result<Sale>.Failure("Cart is empty.");
@@ -84,30 +86,70 @@ public class SalesService : ISalesService
 
         await _context.Sales.AddAsync(sale);
 
-        // Award loyalty points to customer (1 point per whole $ spent)
+        // Deduct redeemed points and award newly earned loyalty points
         if (customerId.HasValue && customerId.Value > 0)
         {
             var customer = await _context.Customers.FindAsync(customerId.Value);
             if (customer != null)
             {
+                if (pointsRedeemed > 0)
+                {
+                    customer.Points = Math.Max(0, customer.Points - pointsRedeemed);
+                }
+
                 customer.Points += (int)finalTotal;
+            }
+        }
+
+        // Update active shift Expected Cash in real-time for cash payments
+        if (shiftId.HasValue && shiftId.Value > 0)
+        {
+            var shift = await _context.CashierShifts.FindAsync(shiftId.Value);
+            if (shift != null && shift.Status == ShiftStatus.Open && paymentMethod == PaymentMethod.Cash)
+            {
+                shift.ExpectedCash += finalTotal;
             }
         }
 
         await _context.SaveChangesAsync();
 
-        _ = _receiptPrinter.PrintReceiptAsync("Smart Mart Kiosk", receiptNumber, receiptPrintItems, finalTotal, cashReceived, changeGiven);
-
+        // Note: Receipt printing is triggered on-demand by the POS Terminal or Purchase History UI via IReceiptPrinter.
         return Result<Sale>.Success(sale);
     }
 
     public async Task<List<Sale>> GetRecentSalesAsync(int count = 20)
     {
         return await _context.Sales
+            .AsNoTracking()
             .Include(s => s.Items)
             .Include(s => s.Customer)
+            .Include(s => s.Shift)
+                .ThenInclude(sh => sh!.User)
             .OrderByDescending(s => s.CreatedAt)
             .Take(count)
             .ToListAsync();
+    }
+
+    public async Task<List<Sale>> GetAllSalesAsync()
+    {
+        return await _context.Sales
+            .AsNoTracking()
+            .Include(s => s.Items)
+            .Include(s => s.Customer)
+            .Include(s => s.Shift)
+                .ThenInclude(sh => sh!.User)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<Sale?> GetSaleByIdAsync(int id)
+    {
+        return await _context.Sales
+            .AsNoTracking()
+            .Include(s => s.Items)
+            .Include(s => s.Customer)
+            .Include(s => s.Shift)
+                .ThenInclude(sh => sh!.User)
+            .FirstOrDefaultAsync(s => s.Id == id);
     }
 }

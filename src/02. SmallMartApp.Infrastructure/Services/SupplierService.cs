@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SmallMartApp.Core.Common;
 using SmallMartApp.Core.Features.Suppliers;
 using SmallMartApp.Infrastructure.Persistence;
@@ -17,6 +17,7 @@ public class SupplierService : ISupplierService
     public async Task<List<Supplier>> GetAllAsync()
     {
         return await _context.Suppliers
+            .AsNoTracking()
             .Include(s => s.PurchaseOrders)
             .OrderBy(s => s.CompanyName)
             .ToListAsync();
@@ -28,12 +29,30 @@ public class SupplierService : ISupplierService
             return Result<Supplier>.Failure("Company name is required.");
 
         if (supplier.Id == 0)
+        {
             await _context.Suppliers.AddAsync(supplier);
+        }
         else
-            _context.Suppliers.Update(supplier);
+        {
+            var tracked = await _context.Suppliers.FindAsync(supplier.Id);
+            if (tracked == null)
+                return Result<Supplier>.Failure("Supplier not found.");
+
+            _context.Entry(tracked).CurrentValues.SetValues(supplier);
+        }
 
         await _context.SaveChangesAsync();
         return Result<Supplier>.Success(supplier);
+    }
+
+    public async Task<Result> DeleteAsync(int id)
+    {
+        var supplier = await _context.Suppliers.FindAsync(id);
+        if (supplier == null) return Result.Failure("Supplier not found.");
+
+        _context.Suppliers.Remove(supplier);
+        await _context.SaveChangesAsync();
+        return Result.Success();
     }
 
     public async Task<Result<PurchaseOrder>> CreateRestockOrderAsync(int supplierId, List<(int ProductId, int Qty, decimal UnitCost)> items)

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SmallMartApp.Core.Common;
 using SmallMartApp.Core.Features.Customers;
 using SmallMartApp.Infrastructure.Persistence;
@@ -17,6 +17,7 @@ public class CustomerService : ICustomerService
     public async Task<List<Customer>> GetAllAsync()
     {
         return await _context.Customers
+            .AsNoTracking()
             .OrderByDescending(c => c.Points)
             .ToListAsync();
     }
@@ -25,6 +26,7 @@ public class CustomerService : ICustomerService
     {
         if (string.IsNullOrWhiteSpace(phone)) return null;
         return await _context.Customers
+            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.PhoneNumber == phone.Trim());
     }
 
@@ -36,14 +38,23 @@ public class CustomerService : ICustomerService
             return Result<Customer>.Failure("Phone number is required.");
 
         var existing = await _context.Customers
+            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.PhoneNumber == customer.PhoneNumber && c.Id != customer.Id);
         if (existing != null)
             return Result<Customer>.Failure("A customer with this phone number already exists.");
 
         if (customer.Id == 0)
+        {
             await _context.Customers.AddAsync(customer);
+        }
         else
-            _context.Customers.Update(customer);
+        {
+            var tracked = await _context.Customers.FindAsync(customer.Id);
+            if (tracked == null)
+                return Result<Customer>.Failure("Customer not found.");
+
+            _context.Entry(tracked).CurrentValues.SetValues(customer);
+        }
 
         await _context.SaveChangesAsync();
         return Result<Customer>.Success(customer);

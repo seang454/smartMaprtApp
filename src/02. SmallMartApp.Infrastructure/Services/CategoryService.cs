@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SmallMartApp.Core.Common;
 using SmallMartApp.Core.Features.Products;
 using SmallMartApp.Infrastructure.Persistence;
@@ -17,6 +17,7 @@ public class CategoryService : ICategoryService
     public async Task<List<Category>> GetAllAsync()
     {
         return await _context.Categories
+            .AsNoTracking()
             .Include(c => c.Products)
             .OrderBy(c => c.Name)
             .ToListAsync();
@@ -33,9 +34,17 @@ public class CategoryService : ICategoryService
             return Result<Category>.Failure("Category name is required.");
 
         if (category.Id == 0)
+        {
             await _context.Categories.AddAsync(category);
+        }
         else
-            _context.Categories.Update(category);
+        {
+            var tracked = await _context.Categories.FindAsync(category.Id);
+            if (tracked == null)
+                return Result<Category>.Failure("Category not found.");
+
+            _context.Entry(tracked).CurrentValues.SetValues(category);
+        }
 
         await _context.SaveChangesAsync();
         return Result<Category>.Success(category);

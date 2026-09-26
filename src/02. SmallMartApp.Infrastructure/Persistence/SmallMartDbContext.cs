@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SmallMartApp.Core.Features.Auth;
 using SmallMartApp.Core.Features.Customers;
 using SmallMartApp.Core.Features.Products;
@@ -84,6 +84,7 @@ public class SmallMartDbContext : DbContext
             entity.HasIndex(e => e.Username).IsUnique();
             entity.Property(e => e.Username).HasMaxLength(50).IsRequired();
             entity.Property(e => e.FullName).HasMaxLength(120).IsRequired();
+            entity.Property(e => e.WorkingShift).HasMaxLength(50).HasDefaultValue("Morning");
             entity.Property(e => e.PasswordHash).IsRequired();
             entity.Property(e => e.Role).HasConversion<string>();
         });
@@ -174,8 +175,8 @@ public class SmallMartDbContext : DbContext
         );
 
         modelBuilder.Entity<User>().HasData(
-            new User { Id = 1, Username = "admin", PasswordHash = "admin123", FullName = "System Administrator", Role = UserRole.Admin, IsActive = true },
-            new User { Id = 2, Username = "cashier1", PasswordHash = "123456", FullName = "Cashier One", Role = UserRole.Cashier, IsActive = true }
+            new User { Id = 1, Username = "admin", PasswordHash = "admin123", FullName = "Chea Sovann", WorkingShift = "FullTime", Role = UserRole.Admin, IsActive = true },
+            new User { Id = 2, Username = "cashier1", PasswordHash = "123456", FullName = "Sreymao Tep", WorkingShift = "Morning", Role = UserRole.Cashier, IsActive = true }
         );
 
         modelBuilder.Entity<Product>().HasData(

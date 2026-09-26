@@ -1,51 +1,426 @@
-﻿<UserControl x:Class="SmallMartApp.UI.Views.CustomerView"
+<UserControl x:Class="SmallMartApp.UI.Views.CustomerView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:SmallMartApp.UI.ViewModels"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:CustomerViewModel}"
              Background="#F8FAFC">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+
+        <Style x:Key="ModernButtonStyle" TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="BtnBorder" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="BtnBorder" Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ModernTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+
     <Grid Margin="24">
         <Grid.RowDefinitions>
+            <!-- Title & Toolbar -->
             <RowDefinition Height="Auto"/>
+            <!-- Register Customer Card -->
             <RowDefinition Height="Auto"/>
+            <!-- Status Notification -->
+            <RowDefinition Height="Auto"/>
+            <!-- Table (Stretches Full Height) -->
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="👥 Customer Loyalty Directory" FontSize="26" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,16"/>
+        <!-- 1. Header & Filter / Sort / Search Toolbar -->
+        <Grid Grid.Row="0" Margin="0,0,0,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="1" Background="White" CornerRadius="10" Padding="16" Margin="0,0,0,16" BorderBrush="#E2E8F0" BorderThickness="1">
-            <StackPanel>
-                <TextBlock Text="Register New Customer" FontWeight="Bold" FontSize="14" Foreground="#334155" Margin="0,0,0,8"/>
-                <WrapPanel Orientation="Horizontal">
-                    <StackPanel Width="220" Margin="0,0,12,0">
-                        <TextBlock Text="Full Name:" FontSize="11" Foreground="#64748B"/>
-                        <TextBox Text="{Binding NewFullName, UpdateSourceTrigger=PropertyChanged}" Padding="6,4"/>
+            <StackPanel Grid.Column="0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="👥 " FontSize="22" VerticalAlignment="Center"/>
+                    <TextBlock Text="Customer Loyalty Directory" FontSize="22" FontWeight="ExtraBold" Foreground="#0F172A"/>
+                </StackPanel>
+                <TextBlock Text="Track customer points, contact details, and reward memberships" 
+                           FontSize="12" Foreground="#64748B" Margin="28,2,0,0"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Search Box -->
+                <Border Background="White" CornerRadius="8" BorderBrush="#CBD5E1" BorderThickness="1" 
+                        Padding="8,0" Width="200" Margin="0,0,8,0" Height="38">
+                    <Grid VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="🔍" FontSize="11" Foreground="#94A3B8" Margin="4,0,6,0" VerticalAlignment="Center"/>
+                        <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" 
+                                 BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
+                                 FontSize="12" Foreground="#0F172A"/>
+                    </Grid>
+                </Border>
+
+                <!-- Filter Dropdown (Points) -->
+                <ComboBox ItemsSource="{Binding PointsFilters}" SelectedItem="{Binding SelectedPointsFilter}" 
+                          Width="140" Height="38" Margin="0,0,8,0"
+                          VerticalContentAlignment="Center" Background="White" BorderBrush="#CBD5E1" FontSize="12"/>
+
+                <!-- Sort Dropdown -->
+                <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SortBy}" 
+                          Width="160" Height="38" Margin="0,0,8,0"
+                          VerticalContentAlignment="Center" Background="White" BorderBrush="#CBD5E1" FontSize="12"/>
+
+                <!-- Reset Button -->
+                <Button Content="✕" Command="{Binding ResetFiltersCommand}" 
+                        Style="{StaticResource ModernButtonStyle}"
+                        Background="#F1F5F9" Foreground="#475569" Height="38" Padding="12,0" Margin="0,0,8,0" FontSize="12"
+                        ToolTip="Reset Filters"/>
+
+                <!-- Refresh Button -->
+                <Button Content="↻" Command="{Binding LoadCustomersCommand}" 
+                        Style="{StaticResource ModernButtonStyle}" Background="#2563EB" Foreground="White" Height="38" Padding="14,0"
+                        ToolTip="Refresh List"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- 2. Register New Customer Card -->
+        <Border Grid.Row="1" Background="White" CornerRadius="12" Padding="20,16" Margin="0,0,0,16"
+                BorderBrush="#E2E8F0" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="✨ Register New Customer" FontSize="14" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,12"/>
+
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="FULL NAME" FontSize="11" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding NewFullName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}"/>
                     </StackPanel>
-                    <StackPanel Width="180" Margin="0,0,12,0">
-                        <TextBlock Text="Phone Number:" FontSize="11" Foreground="#64748B"/>
-                        <TextBox Text="{Binding NewPhoneNumber, UpdateSourceTrigger=PropertyChanged}" Padding="6,4"/>
+
+                    <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                        <TextBlock Text="PHONE NUMBER" FontSize="11" FontWeight="Bold" Foreground="#64748B" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding NewPhoneNumber, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}"/>
                     </StackPanel>
-                    <Button Content="➕ Register Customer" Command="{Binding AddCustomerCommand}" 
-                            Background="#16A34A" Foreground="White" FontWeight="Bold" Padding="16,6" VerticalAlignment="Bottom" BorderThickness="0" Cursor="Hand"/>
-                </WrapPanel>
-                <TextBlock Text="{Binding StatusMessage}" Foreground="#E67E22" FontSize="12" Margin="0,6,0,0"/>
+
+                    <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
+                        <Button Content="+ Register Customer" Command="{Binding AddCustomerCommand}" 
+                                Style="{StaticResource ModernButtonStyle}" Background="#10B981" Foreground="White" Height="36" Padding="20,0"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- 3. Status Notification -->
+        <Border Grid.Row="2" Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" 
+                CornerRadius="8" Padding="14,8" Margin="0,0,0,12">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility" Value="Visible"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding StatusMessage}" Value="">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding StatusMessage}" Value="{x:Null}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="ℹ️ " VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding StatusMessage}" FontSize="12" FontWeight="SemiBold" Foreground="#1D4ED8" VerticalAlignment="Center"/>
             </StackPanel>
         </Border>
 
-        <Border Grid.Row="2" Background="White" CornerRadius="12" Padding="16" BorderBrush="#E2E8F0" BorderThickness="1">
-            <DataGrid ItemsSource="{Binding Customers}" AutoGenerateColumns="False" CanUserAddRows="False"
-                      GridLinesVisibility="Horizontal" HeadersVisibility="Column" Background="White" RowHeight="42" BorderThickness="0">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="70"/>
-                    <DataGridTextColumn Header="Customer Name" Binding="{Binding FullName}" Width="*" FontWeight="SemiBold"/>
-                    <DataGridTextColumn Header="Phone Number" Binding="{Binding PhoneNumber}" Width="160" FontWeight="SemiBold"/>
-                    <DataGridTextColumn Header="Loyalty Points" Binding="{Binding Points}" Width="120" FontWeight="Bold"/>
-                    <DataGridTextColumn Header="Registered Date" Binding="{Binding CreatedAt, StringFormat=yyyy-MM-dd}" Width="140"/>
-                </DataGrid.Columns>
-            </DataGrid>
-        </Border>
+        <!-- 4. Customer Directory Table (Full Height) -->
+        <Border Grid.Row="3" Background="White" CornerRadius="12" Padding="0" 
+                BorderBrush="#E2E8F0" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <ListView Grid.Row="0" ItemsSource="{Binding Customers}" BorderThickness="0" Background="Transparent"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListView.Resources>
+                    <Style TargetType="GridViewColumnHeader">
+                        <Setter Property="Background" Value="#F8FAFC"/>
+                        <Setter Property="Foreground" Value="#475569"/>
+                        <Setter Property="FontWeight" Value="Bold"/>
+                        <Setter Property="FontSize" Value="12"/>
+                        <Setter Property="Padding" Value="16,12"/>
+                        <Setter Property="BorderBrush" Value="#E2E8F0"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,2"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="GridViewColumnHeader">
+                                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" 
+                                            BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="BorderBrush" Value="#F1F5F9"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListViewItem">
+                                    <Border x:Name="ItemBorder" Background="{TemplateBinding Background}" 
+                                            BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="0,10">
+                                        <GridViewRowPresenter VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="ItemBorder" Property="Background" Value="#F1F5F9"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="ItemBorder" Property="Background" Value="#E0E7FF"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListView.Resources>
+
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="ID" Width="70">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Id}" Foreground="#94A3B8" FontWeight="SemiBold" Margin="16,0,0,0"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <GridViewColumn Header="CUSTOMER NAME" Width="240">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Background="#F1F5F9" CornerRadius="14" Width="28" Height="28" Margin="0,0,10,0">
+                                            <TextBlock Text="👤" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <TextBlock Text="{Binding FullName}" FontWeight="Bold" FontSize="14" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <GridViewColumn Header="PHONE NUMBER" Width="200">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,3" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding PhoneNumber}" FontFamily="Consolas" FontWeight="SemiBold" FontSize="13" Foreground="#334155"/>
+                                    </Border>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <GridViewColumn Header="LOYALTY POINTS" Width="170">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="#FEF3C7" CornerRadius="12" Padding="10,3" HorizontalAlignment="Left">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="⭐ " FontSize="11" Foreground="#D97706" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Points, StringFormat='{}{0} pts'}" FontWeight="Bold" FontSize="12" Foreground="#B45309"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <GridViewColumn Header="REGISTERED DATE" Width="160">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="12" Foreground="#64748B" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <!-- Action (Edit & Delete) -->
+                        <GridViewColumn Header="ACTIONS" Width="95">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <!-- Edit Button -->
+                                        <Button Command="{Binding DataContext.OpenEditCustomerCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                CommandParameter="{Binding}" Width="30" Height="30" Cursor="Hand" Margin="0,0,6,0"
+                                                ToolTip="Edit Customer" Background="Transparent" BorderThickness="0">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="EditBorder" Background="#EFF6FF" CornerRadius="6" Padding="6">
+                                                        <TextBlock Text="✏️" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="EditBorder" Property="Background" Value="#BFDBFE"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+
+                                        <!-- Delete Button -->
+                                        <Button Command="{Binding DataContext.DeleteCustomerCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                CommandParameter="{Binding}" Width="30" Height="30" Cursor="Hand"
+                                                ToolTip="Delete Customer" Background="Transparent" BorderThickness="0">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="DelBorder" Background="#FEE2E2" CornerRadius="6" Padding="6">
+                                                        <TextBlock Text="🗑️" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="DelBorder" Property="Background" Value="#EF4444"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <!-- Pagination Bar -->
+            <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0" Padding="16,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Showing X-Y of Z entries -->
+                    <TextBlock Grid.Column="0" Text="{Binding PaginationInfo}" 
+                               FontSize="12" Foreground="#64748B" VerticalAlignment="Center"/>
+
+                    <!-- Page Size Selector -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="Rows per page:" FontSize="12" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox ItemsSource="{Binding PageSizeOptions}" SelectedItem="{Binding PageSize}" 
+                                  Width="65" Height="30" FontSize="12" VerticalContentAlignment="Center"
+                                  Background="White" BorderBrush="#CBD5E1"/>
+                    </StackPanel>
+
+                    <!-- Navigation Buttons -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="⏮" Command="{Binding FirstPageCommand}" IsEnabled="{Binding CanPreviousPage}"
+                                Width="30" Height="30" Margin="0,0,4,0" ToolTip="First Page"
+                                Style="{StaticResource ModernButtonStyle}" Background="#E2E8F0" Foreground="#334155" Padding="0"/>
+                        <Button Content="◀" Command="{Binding PreviousPageCommand}" IsEnabled="{Binding CanPreviousPage}"
+                                Width="30" Height="30" Margin="0,0,6,0" ToolTip="Previous Page"
+                                Style="{StaticResource ModernButtonStyle}" Background="#E2E8F0" Foreground="#334155" Padding="0"/>
+                        
+                        <Border Background="#EFF6FF" CornerRadius="6" Padding="10,4" Margin="0,0,6,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding PageDisplay}" FontWeight="Bold" FontSize="12" Foreground="#2563EB"/>
+                        </Border>
+
+                        <Button Content="▶" Command="{Binding NextPageCommand}" IsEnabled="{Binding CanNextPage}"
+                                Width="30" Height="30" Margin="0,0,4,0" ToolTip="Next Page"
+                                Style="{StaticResource ModernButtonStyle}" Background="#E2E8F0" Foreground="#334155" Padding="0"/>
+                        <Button Content="⏭" Command="{Binding LastPageCommand}" IsEnabled="{Binding CanNextPage}"
+                                Width="30" Height="30" ToolTip="Last Page"
+                                Style="{StaticResource ModernButtonStyle}" Background="#E2E8F0" Foreground="#334155" Padding="0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+
+        <!-- Edit Customer Modal Dialog -->
+        <Grid Grid.RowSpan="4" Background="#990F172A" 
+              Visibility="{Binding IsEditCustomerOpen, Converter={StaticResource BoolToVisConverter}}"
+              Panel.ZIndex="1000">
+            <Border Background="White" CornerRadius="14" Padding="28,24" Width="460" 
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    BorderBrush="#CBD5E1" BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <Border Background="#EFF6FF" CornerRadius="10" Width="40" Height="40" Margin="0,0,12,0">
+                            <TextBlock Text="✏️" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Edit Customer Profile" FontSize="16" FontWeight="Bold" Foreground="#0F172A"/>
+                            <TextBlock Text="Update customer name, contact, and loyalty point balance" FontSize="11" Foreground="#64748B"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,0,12">
+                        <TextBlock Text="FULL NAME" FontSize="11" FontWeight="Bold" Foreground="#475569" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding EditFullName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,0,12">
+                        <TextBlock Text="PHONE NUMBER" FontSize="11" FontWeight="Bold" Foreground="#475569" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding EditPhoneNumber, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,0,24">
+                        <TextBlock Text="LOYALTY POINTS" FontSize="11" FontWeight="Bold" Foreground="#475569" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding EditPoints, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource EmptyToZeroConverter}}" Style="{StaticResource ModernTextBoxStyle}"/>
+                    </StackPanel>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="Cancel" Command="{Binding CloseEditCustomerCommand}"
+                                Style="{StaticResource ModernButtonStyle}" 
+                                Background="#F1F5F9" Foreground="#475569" Height="40" Margin="0,0,6,0"/>
+                        <Button Grid.Column="1" Content="✓ Save Changes" Command="{Binding SaveEditCustomerCommand}"
+                                Style="{StaticResource ModernButtonStyle}" 
+                                Background="#2563EB" Foreground="White" Height="40" Margin="6,0,0,0"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using SmallMartApp.Core.Features.Auth;
 using SmallMartApp.Core.Features.Customers;
 using SmallMartApp.Core.Features.Dashboard;
 using SmallMartApp.Core.Features.Products;
@@ -42,6 +43,9 @@ public static class DependencyInjection
         services.AddTransient<IShiftService, ShiftService>();
         services.AddTransient<ISalesService, SalesService>();
         services.AddTransient<IDashboardService, DashboardService>();
+        services.AddTransient<IAuthService, AuthService>();
+        services.AddTransient<IUserService, UserService>();
+        services.AddTransient<SmallMartApp.Core.Features.Payments.IKhqrService, KhqrService>();
 
         return services;
     }

@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -6,7 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SmallMartApp.Infrastructure;
 using SmallMartApp.Infrastructure.Persistence;
+using SmallMartApp.UI.Helpers;
 using SmallMartApp.UI.ViewModels;
+using SmallMartApp.UI.Views;
 
 namespace SmallMartApp.UI;
 
@@ -17,6 +19,9 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Enable copy across all UI elements, tables, and cards
+        GlobalCopyHelper.Initialize();
 
         _host = Host.CreateDefaultBuilder()
             .ConfigureAppConfiguration((hostingContext, config) =>
@@ -32,6 +37,12 @@ public partial class App : Application
                 // Register Infrastructure & Services
                 services.AddInfrastructure(connectionString);
 
+                // Register UI Notification & Alert System
+                services.AddSingleton<SmallMartApp.UI.Services.INotificationService, SmallMartApp.UI.Services.NotificationService>();
+
+                // Register Virtual Thermal Receipt Printer Simulator (replaces console fake printer with interactive UI)
+                services.AddSingleton<SmallMartApp.Core.Hardware.IReceiptPrinter, SmallMartApp.UI.Services.WpfReceiptPrinter>();
+
                 // Register all UI ViewModels
                 services.AddSingleton<DashboardViewModel>();
                 services.AddSingleton<PosCheckoutViewModel>();
@@ -40,10 +51,14 @@ public partial class App : Application
                 services.AddSingleton<CustomerViewModel>();
                 services.AddSingleton<SupplierViewModel>();
                 services.AddSingleton<ShiftViewModel>();
+                services.AddSingleton<UserViewModel>();
+                services.AddSingleton<CustomerPurchaseHistoryViewModel>();
                 services.AddSingleton<MainViewModel>();
+                services.AddSingleton<LoginViewModel>();
 
-                // Register Shell Window
+                // Register Windows
                 services.AddSingleton<MainWindow>();
+                services.AddSingleton<LoginWindow>();
             })
             .Build();
 
@@ -56,8 +71,8 @@ public partial class App : Application
             await db.Database.EnsureCreatedAsync();
         }
 
-        var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-        mainWindow.Show();
+        var loginWindow = _host.Services.GetRequiredService<LoginWindow>();
+        loginWindow.Show();
     }
 
     protected override async void OnExit(ExitEventArgs e)

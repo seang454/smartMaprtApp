@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SmallMartApp.Core.Common;
 using SmallMartApp.Core.Features.Products;
 using SmallMartApp.Infrastructure.Persistence;
@@ -17,6 +17,7 @@ public class ProductService : IProductService
     public async Task<List<Product>> GetAllAsync()
     {
         return await _context.Products
+            .AsNoTracking()
             .Include(p => p.Category)
             .Include(p => p.Supplier)
             .Where(p => p.IsActive)
@@ -28,6 +29,7 @@ public class ProductService : IProductService
     {
         if (string.IsNullOrWhiteSpace(barcode)) return null;
         return await _context.Products
+            .AsNoTracking()
             .Include(p => p.Category)
             .FirstOrDefaultAsync(p => p.Barcode == barcode.Trim() && p.IsActive);
     }
@@ -44,15 +46,24 @@ public class ProductService : IProductService
             return Result<Product>.Failure("Sell price must be greater than zero.");
 
         var existing = await _context.Products
+            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Barcode == product.Barcode && p.Id != product.Id);
 
         if (existing != null)
             return Result<Product>.Failure($"A product with barcode '{product.Barcode}' already exists.");
 
         if (product.Id == 0)
+        {
             await _context.Products.AddAsync(product);
+        }
         else
-            _context.Products.Update(product);
+        {
+            var tracked = await _context.Products.FindAsync(product.Id);
+            if (tracked == null)
+                return Result<Product>.Failure("Product not found.");
+
+            _context.Entry(tracked).CurrentValues.SetValues(product);
+        }
 
         await _context.SaveChangesAsync();
         return Result<Product>.Success(product);

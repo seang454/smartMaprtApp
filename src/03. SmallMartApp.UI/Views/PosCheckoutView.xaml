@@ -1,163 +1,824 @@
-﻿<UserControl x:Class="SmallMartApp.UI.Views.PosCheckoutView"
+<UserControl x:Class="SmallMartApp.UI.Views.PosCheckoutView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:SmallMartApp.UI.ViewModels"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:PosCheckoutViewModel}"
              Background="#F8FAFC">
-    <Grid Margin="20">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*"/>
-            <ColumnDefinition Width="2*"/>
-        </Grid.ColumnDefinitions>
 
-        <!-- Left: Cart & Barcode Scanner -->
-        <Border Grid.Column="0" Background="White" CornerRadius="12" Padding="20" Margin="0,0,16,0" BorderBrush="#E2E8F0" BorderThickness="1">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+
+        <!-- Modern Button Style without WPF Chrome overlapping -->
+        <Style x:Key="ModernFlatButtonStyle" TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="14,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="btnBorder" Background="{TemplateBinding Background}" 
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.9"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="btnBorder" Property="Opacity" Value="0.75"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Rounded Mini Action Button -->
+        <Style x:Key="MiniCircleButtonStyle" TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="circBorder" Background="{TemplateBinding Background}" 
+                                CornerRadius="14" Width="28" Height="28">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="circBorder" Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- ======================================================== -->
+        <!-- MAIN POS INTERFACE LAYOUT                                -->
+        <!-- ======================================================== -->
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <!-- 0: Shift & Drawer Status Alert Bar -->
+                <RowDefinition Height="Auto"/>
+                <!-- 1: TOP: Full-Width Payment & Checkout Summary Banner -->
+                <RowDefinition Height="Auto"/>
+                <!-- 2: BOTTOM: Full-Width Shopping Cart & Scanner -->
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+        <!-- ======================================================== -->
+        <!-- 0. SHIFT & DRAWER STATUS ALERT BAR                       -->
+        <!-- ======================================================== -->
+        <Border Grid.Row="0" Margin="0,0,0,12" CornerRadius="10" Padding="14,10" BorderThickness="1">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="#ECFDF5"/>
+                    <Setter Property="BorderBrush" Value="#A7F3D0"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasActiveShift}" Value="False">
+                            <Setter Property="Background" Value="#FFFBEB"/>
+                            <Setter Property="BorderBrush" Value="#FDE68A"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Status Icon & Details -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border CornerRadius="8" Padding="6,4" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#D1FAE5"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasActiveShift}" Value="False">
+                                        <Setter Property="Background" Value="#FEF3C7"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock FontSize="14" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="🟢"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasActiveShift}" Value="False">
+                                            <Setter Property="Text" Value="⚠️"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontWeight="Bold" FontSize="13">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="{Binding ActiveShiftSummary}"/>
+                                    <Setter Property="Foreground" Value="#065F46"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasActiveShift}" Value="False">
+                                            <Setter Property="Text" Value="Cash Drawer Shift Closed — Sales Checkout Locked"/>
+                                            <Setter Property="Foreground" Value="#B45309"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock FontSize="11" Foreground="#64748B">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="{Binding ActiveShiftCashierDisplay, StringFormat='Cashier on Duty: {0}'}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasActiveShift}" Value="False">
+                                            <Setter Property="Text" Value="Start your cashier shift and declare your opening float to enable payment processing."/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Actions -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Start Shift Button (Visible when shift is closed) -->
+                    <Button Content="▶ Open Shift / Enter Float" Command="{Binding OpenShiftGateCommand}"
+                            Background="#10B981" Foreground="White"
+                            Height="34" Padding="14,0" Margin="0,0,8,0" FontSize="12">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource ModernFlatButtonStyle}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasActiveShift}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <!-- Drawer Audit Screen Link -->
+                    <Button Content="📋 Drawer Reconciliation" Command="{Binding GoToShiftReconciliationCommand}"
+                            Style="{StaticResource ModernFlatButtonStyle}" Background="White" Foreground="#475569"
+                            BorderBrush="#CBD5E1" BorderThickness="1"
+                            Height="34" Padding="12,0" FontSize="12" ToolTip="Go to Cashier Shifts &amp; Drawer Balancing"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ======================================================== -->
+        <!-- 1. TOP PAYMENT SUMMARY BANNER (FULL WIDTH)               -->
+        <!-- ======================================================== -->
+        <Border Grid.Row="1" Background="White" CornerRadius="12" Padding="20" BorderBrush="#E2E8F0" BorderThickness="1">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <!-- Total Due Dark Badge -->
+                        <ColumnDefinition Width="240"/>
+                        <!-- Payment Method Selection -->
+                        <ColumnDefinition Width="200"/>
+                        <!-- Cash & Change Input -->
+                        <ColumnDefinition Width="200"/>
+                        <!-- Spacer -->
+                        <ColumnDefinition Width="*"/>
+                        <!-- Action Buttons -->
+                        <ColumnDefinition Width="250"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- COL 0: Total Due Badge -->
+                    <Border Grid.Column="0" Background="#0F172A" CornerRadius="10" Padding="18,10" Margin="0,0,16,0">
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="TOTAL DUE" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8"/>
+                            <TextBlock Text="{Binding TotalAmount, StringFormat='${0:F2} USD'}" 
+                                       FontSize="28" FontWeight="ExtraBold" Foreground="#10B981" Margin="0,2,0,0"/>
+                            <TextBlock Text="{Binding DiscountAmount, StringFormat='Discount: -${0:F2}'}" 
+                                       FontSize="11" FontWeight="Bold" Foreground="#F59E0B" Margin="0,1,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding DiscountAmount}" Value="0">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- COL 1: Payment Method -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Text="Payment Method:" FontSize="12" FontWeight="SemiBold" Foreground="#64748B" Margin="0,0,0,6"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="💵 CASH" Command="{Binding SelectCashPaymentCommand}" 
+                                    Style="{StaticResource ModernFlatButtonStyle}"
+                                    Background="#2563EB" Foreground="White" Height="38" Margin="0,0,4,0"/>
+                            <Button Grid.Column="1" Content="📱 KHQR" Command="{Binding SelectKhqrPaymentCommand}" 
+                                    Style="{StaticResource ModernFlatButtonStyle}"
+                                    Background="#DC2626" Foreground="White" Height="38" Margin="4,0,0,0"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- COL 2: Cash Received & Change -->
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock Text="Cash Received ($):" FontSize="12" FontWeight="SemiBold" Foreground="#64748B" VerticalAlignment="Center"/>
+                            <Button Content="⚡ Exact" Command="{Binding SetExactCashCommand}" 
+                                    HorizontalAlignment="Right" FontSize="10" FontWeight="Bold"
+                                    Background="#E0E7FF" Foreground="#4338CA" Padding="6,2" Height="20"
+                                    Style="{StaticResource ModernFlatButtonStyle}"/>
+                        </DockPanel>
+                        <TextBox Text="{Binding CashReceived, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource EmptyToZeroConverter}, StringFormat='{}{0:F2}'}" 
+                                 FontSize="15" FontWeight="Bold" Padding="8,6" Background="#F1F5F9"
+                                 BorderBrush="#CBD5E1" BorderThickness="1"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Text="Change: " FontSize="12" Foreground="#64748B" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ChangeGiven, StringFormat='${0:F2}'}" 
+                                       FontSize="16" FontWeight="Bold" Foreground="#2563EB" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- COL 3: Loyalty Points Redemption Panel -->
+                    <Border Grid.Column="3" Background="#F0FDF4" CornerRadius="10" Padding="12,10" 
+                            BorderBrush="#BBF7D0" BorderThickness="1" Margin="0,0,16,0" VerticalAlignment="Center">
+                        <StackPanel>
+                            <!-- Header with member points info -->
+                            <DockPanel Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="🎁 " FontSize="11"/>
+                                    <TextBlock Text="Redeem Points" FontSize="11" FontWeight="Bold" Foreground="#15803D"/>
+                                </StackPanel>
+                                <TextBlock HorizontalAlignment="Right" FontSize="11" FontWeight="SemiBold" Foreground="#166534">
+                                    <Run Text="Avail: "/>
+                                    <Run Text="{Binding CurrentCustomer.Points, FallbackValue='0'}" FontWeight="Bold"/>
+                                    <Run Text=" pts"/>
+                                </TextBlock>
+                            </DockPanel>
+
+                            <!-- Input Row: Points to Spend + Quick Buttons -->
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" 
+                                         Text="{Binding PointsToRedeem, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource EmptyToZeroConverter}}" 
+                                         FontSize="13" FontWeight="Bold" Padding="6,3" 
+                                         Background="White" BorderBrush="#86EFAC" BorderThickness="1"
+                                         IsEnabled="{Binding HasCustomerWithPoints}"/>
+                                <Button Grid.Column="1" Content="Max" Command="{Binding RedeemMaxPointsCommand}" 
+                                        IsEnabled="{Binding HasCustomerWithPoints}"
+                                        Style="{StaticResource ModernFlatButtonStyle}"
+                                        Background="#16A34A" Foreground="White" Height="26" Padding="8,0" Margin="4,0,0,0" FontSize="10"/>
+                                <Button Grid.Column="2" Content="✕" Command="{Binding ClearPointsCommand}" 
+                                        IsEnabled="{Binding HasCustomerWithPoints}"
+                                        Style="{StaticResource ModernFlatButtonStyle}"
+                                        Background="#E2E8F0" Foreground="#475569" Height="26" Padding="6,0" Margin="4,0,0,0" FontSize="10"/>
+                            </Grid>
+
+                            <!-- Discount Feedback or Rate note -->
+                            <TextBlock Text="{Binding PointRedemptionFeedback, FallbackValue='Rate: 100 pts = $1.00 discount'}" 
+                                       FontSize="10" FontWeight="SemiBold" Foreground="#15803D" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- COL 4: Final Action Buttons (Spaced cleanly without overlapping) -->
+                    <StackPanel Grid.Column="4" VerticalAlignment="Center">
+                        <Button Content="✅ COMPLETE SALE &amp; PRINT" 
+                                Command="{Binding CompleteSaleCommand}" 
+                                Style="{StaticResource ModernFlatButtonStyle}"
+                                Height="42" Background="#10B981" Foreground="White" 
+                                FontSize="13" Margin="0,0,0,8"/>
+
+                        <Button Content="Clear Cart" 
+                                Command="{Binding ClearCartCommand}" 
+                                Style="{StaticResource ModernFlatButtonStyle}"
+                                Height="32" Background="#EF4444" Foreground="White" 
+                                FontSize="12"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Status Feedback Message Strip -->
+                <Border Grid.Row="1" Margin="0,14,0,0" Padding="12,8" Background="#F8FAFC" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1">
+                    <DockPanel>
+                        <TextBlock Text="Status: " FontWeight="Bold" FontSize="12" Foreground="#64748B"/>
+                        <TextBlock Text="{Binding StatusMessage}" FontSize="12" FontWeight="SemiBold" Foreground="#0284C7"/>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ======================================================== -->
+        <!-- 2. BOTTOM SHOPPING CART (FULL WIDTH & FULL HEIGHT)       -->
+        <!-- ======================================================== -->
+        <Border Grid.Row="2" Background="White" CornerRadius="12" Padding="20" Margin="0,16,0,0"
+                BorderBrush="#E2E8F0" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <!-- Search & Link Bar -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Cart Items Grid/List (Expands to fill all remaining height) -->
                     <RowDefinition Height="*"/>
+                    <!-- Mock Barcode Test Footer -->
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Header & Customer Loyalty Phone Input -->
-                <DockPanel Grid.Row="0" Margin="0,0,0,16">
-                    <TextBlock Text="🛒 Shopping Cart" FontSize="22" FontWeight="Bold" Foreground="#0F172A" VerticalAlignment="Center"/>
-                    
-                    <!-- Customer Phone Search -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <TextBlock Text="Customer Phone:" VerticalAlignment="Center" FontSize="12" Foreground="#64748B" Margin="0,0,8,0"/>
-                        <TextBox Text="{Binding CustomerPhoneInput, UpdateSourceTrigger=PropertyChanged}" Width="130" Padding="6,4" VerticalContentAlignment="Center"/>
-                        <Button Content="🔍 Link" Command="{Binding LookupCustomerCommand}" Background="#3B82F6" Foreground="White" Padding="10,4" Margin="6,0,0,0" BorderThickness="0" Cursor="Hand"/>
-                    </StackPanel>
-                </DockPanel>
-
-                <!-- Barcode Input Box -->
-                <Grid Grid.Row="1" Margin="0,0,0,16">
+                <!-- Scanner & Customer Bar -->
+                <Grid Grid.Row="0" Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
+                        <!-- Title -->
+                        <ColumnDefinition Width="Auto"/>
+                        <!-- Barcode Scanner Input -->
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <!-- Customer Phone Link -->
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox Grid.Column="0" Text="{Binding BarcodeInput, UpdateSourceTrigger=PropertyChanged}" 
-                             FontSize="16" Padding="12,8" VerticalContentAlignment="Center" 
-                             ToolTip="Scan barcode with scanner or enter manually"/>
-                    <Button Grid.Column="1" Content="Add Item" Command="{Binding AddBarcodeCommand}" 
-                            Background="#3B82F6" Foreground="White" FontWeight="Bold" 
-                            Padding="20,8" Margin="10,0,0,0" Cursor="Hand" BorderThickness="0"/>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,20,0">
+                        <TextBlock Text="🛒 " FontSize="20" VerticalAlignment="Center"/>
+                        <TextBlock Text="Shopping Cart" FontSize="18" FontWeight="Bold" Foreground="#0F172A" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Scan Barcode Input -->
+                    <TextBox Grid.Column="1" Text="{Binding BarcodeInput, UpdateSourceTrigger=PropertyChanged}" 
+                             FontSize="14" Padding="12,8" Margin="0,0,8,0" VerticalContentAlignment="Center"
+                             BorderBrush="#CBD5E1" BorderThickness="1"/>
+
+                    <Button Grid.Column="2" Content="Scan / Add Item" Command="{Binding AddBarcodeCommand}" 
+                            Style="{StaticResource ModernFlatButtonStyle}"
+                            Background="#2563EB" Foreground="White" Height="38" Padding="16,0"
+                            Margin="0,0,20,0"/>
+
+                    <!-- Customer Phone Link -->
+                    <TextBlock Grid.Column="3" Text="Customer Phone:" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Foreground="#64748B"/>
+                    <TextBox Grid.Column="4" Text="{Binding CustomerPhoneInput, UpdateSourceTrigger=PropertyChanged}" 
+                             FontSize="13" Padding="8,7" Margin="0,0,8,0" VerticalContentAlignment="Center"
+                             BorderBrush="#CBD5E1" BorderThickness="1"/>
+                    <StackPanel Grid.Column="5" Orientation="Horizontal">
+                        <Button Content="🔍 Link" Command="{Binding LookupCustomerCommand}" 
+                                Style="{StaticResource ModernFlatButtonStyle}"
+                                Background="#0284C7" Foreground="White" Height="36" Padding="12,0" Margin="0,0,6,0"/>
+                        <Button Content="➕ New Member" Command="{Binding OpenQuickRegisterCommand}" 
+                                Style="{StaticResource ModernFlatButtonStyle}"
+                                Background="#10B981" Foreground="White" Height="36" Padding="12,0"/>
+                    </StackPanel>
                 </Grid>
 
-                <!-- Cart Table -->
-                <DataGrid Grid.Row="2" ItemsSource="{Binding CartItems}" AutoGenerateColumns="False" 
-                          CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                          Background="White" RowHeight="42" FontSize="14" BorderThickness="0">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="120" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Item Name" Binding="{Binding Name}" Width="*" FontWeight="SemiBold" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Price" Binding="{Binding UnitPrice, StringFormat=${0:F2}}" Width="80" IsReadOnly="True"/>
-                        <DataGridTemplateColumn Header="Qty" Width="110">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Button Content="-" Command="{Binding DataContext.DecreaseQuantityCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
-                                                CommandParameter="{Binding}" Width="26" Height="26" Margin="2,0" Background="#E2E8F0" BorderThickness="0" Cursor="Hand"/>
-                                        <TextBlock Text="{Binding Quantity}" VerticalAlignment="Center" FontWeight="Bold" Margin="8,0"/>
-                                        <Button Content="+" Command="{Binding DataContext.IncreaseQuantityCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
-                                                CommandParameter="{Binding}" Width="26" Height="26" Margin="2,0" Background="#E2E8F0" BorderThickness="0" Cursor="Hand"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Subtotal" Binding="{Binding Subtotal, StringFormat=${0:F2}}" Width="90" FontWeight="Bold" IsReadOnly="True"/>
-                        <DataGridTemplateColumn Header="Action" Width="60">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Button Content="❌" Command="{Binding DataContext.RemoveCartItemCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" 
-                                            CommandParameter="{Binding}" Background="Transparent" BorderThickness="0" Cursor="Hand"/>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
+                <!-- Full-Width Shopping Cart Items Table -->
+                <ListView Grid.Row="1" ItemsSource="{Binding CartItems}" 
+                          BorderBrush="#E2E8F0" BorderThickness="1" 
+                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Padding" Value="0,4"/>
+                            <Setter Property="BorderBrush" Value="#F1F5F9"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
 
-                <!-- Quick Test Barcodes -->
-                <StackPanel Grid.Row="3" Margin="0,14,0,0">
-                    <TextBlock Text="⚡ Quick Mock Barcode Test:" FontWeight="SemiBold" FontSize="12" Foreground="#94A3B8" Margin="0,0,0,6"/>
-                    <WrapPanel>
-                        <Button Content="Coke (885012401)" Command="{Binding SimulateQuickScanCommand}" CommandParameter="885012401" Margin="0,0,8,6" Padding="10,5" Background="#F1F5F9" BorderThickness="0"/>
-                        <Button Content="Water (885012402)" Command="{Binding SimulateQuickScanCommand}" CommandParameter="885012402" Margin="0,0,8,6" Padding="10,5" Background="#F1F5F9" BorderThickness="0"/>
-                        <Button Content="Chips (885012403)" Command="{Binding SimulateQuickScanCommand}" CommandParameter="885012403" Margin="0,0,8,6" Padding="10,5" Background="#F1F5F9" BorderThickness="0"/>
-                        <Button Content="Noodles (885012404)" Command="{Binding SimulateQuickScanCommand}" CommandParameter="885012404" Margin="0,0,8,6" Padding="10,5" Background="#F1F5F9" BorderThickness="0"/>
-                    </WrapPanel>
-                </StackPanel>
-            </Grid>
-        </Border>
+                    <ListView.View>
+                        <GridView>
+                            <!-- Barcode -->
+                            <GridViewColumn Header="Barcode" Width="120">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Barcode}" FontWeight="SemiBold" Foreground="#64748B" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
 
-        <!-- Right: Payment & Summary Panel Matching Image -->
-        <Border Grid.Column="1" Background="White" CornerRadius="12" Padding="24" BorderBrush="#E2E8F0" BorderThickness="1">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+                            <!-- Item Name -->
+                            <GridViewColumn Header="Item Name" Width="240">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
 
-                <TextBlock Grid.Row="0" Text="Payment Summary" FontSize="20" FontWeight="Bold" Margin="0,0,0,16" Foreground="#0F172A"/>
+                            <!-- Price -->
+                            <GridViewColumn Header="Price" Width="90">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding UnitPrice, StringFormat='${0:F2}'}" FontSize="13" Foreground="#334155" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
 
-                <!-- Total Due Card -->
-                <Border Grid.Row="1" Background="#0F172A" CornerRadius="10" Padding="20" Margin="0,0,0,16">
-                    <StackPanel>
-                        <TextBlock Text="TOTAL DUE" Foreground="#94A3B8" FontSize="13" FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding TotalAmount, StringFormat=${0:F2} USD}" Foreground="#10B981" FontSize="36" FontWeight="Bold"/>
+                            <!-- Quantity Controls -->
+                            <GridViewColumn Header="Quantity" Width="120">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Content="-" Width="26" Height="26" FontWeight="Bold"
+                                                    Command="{Binding DataContext.DecreaseQuantityCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                    CommandParameter="{Binding}" Background="#E2E8F0" BorderThickness="0" Cursor="Hand"/>
+                                            <TextBlock Text="{Binding Quantity}" Width="32" TextAlignment="Center" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                                            <Button Content="+" Width="26" Height="26" FontWeight="Bold"
+                                                    Command="{Binding DataContext.IncreaseQuantityCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                    CommandParameter="{Binding}" Background="#E2E8F0" BorderThickness="0" Cursor="Hand"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+
+                            <!-- Subtotal -->
+                            <GridViewColumn Header="Subtotal" Width="100">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Subtotal, StringFormat='${0:F2}'}" FontWeight="ExtraBold" FontSize="14" Foreground="#0F172A" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+
+                            <!-- Action -->
+                            <GridViewColumn Header="Action" Width="70">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="✕" Style="{StaticResource MiniCircleButtonStyle}"
+                                                Foreground="#EF4444" Background="#FEE2E2"
+                                                Command="{Binding DataContext.RemoveCartItemCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                CommandParameter="{Binding}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+
+                <!-- Quick Mock Barcode Test Footer -->
+                <Border Grid.Row="2" Margin="0,14,0,0" Padding="12,8" Background="#F8FAFC" CornerRadius="8">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="⚡ Quick Mock Barcode Test: " FontWeight="SemiBold" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <Button Content="Coke (885012401)" Command="{Binding SimulateQuickScanCommand}" CommandParameter="885012401"
+                                Background="#E2E8F0" Padding="10,4" Margin="0,0,8,0" FontSize="11" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="Water (885012402)" Command="{Binding SimulateQuickScanCommand}" CommandParameter="885012402"
+                                Background="#E2E8F0" Padding="10,4" Margin="0,0,8,0" FontSize="11" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="Chips (885012403)" Command="{Binding SimulateQuickScanCommand}" CommandParameter="885012403"
+                                Background="#E2E8F0" Padding="10,4" Margin="0,0,8,0" FontSize="11" BorderThickness="0" Cursor="Hand"/>
+                        <Button Content="Noodles (885012404)" Command="{Binding SimulateQuickScanCommand}" CommandParameter="885012404"
+                                Background="#E2E8F0" Padding="10,4" Margin="0,0,8,0" FontSize="11" BorderThickness="0" Cursor="Hand"/>
                     </StackPanel>
                 </Border>
-
-                <!-- Payment Method Toggles -->
-                <Grid Grid.Row="2" Margin="0,0,0,16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Content="💵 CASH" Command="{Binding SelectCashPaymentCommand}" 
-                            Background="#2563EB" Foreground="White" FontWeight="Bold" Padding="12,10" Margin="0,0,6,0" BorderThickness="0" Cursor="Hand"/>
-                    <Button Grid.Column="1" Content="📱 KHQR CODE" Command="{Binding SelectKhqrPaymentCommand}" 
-                            Background="#DC2626" Foreground="White" FontWeight="Bold" Padding="12,10" Margin="6,0,0,0" BorderThickness="0" Cursor="Hand"/>
-                </Grid>
-
-                <!-- Cash Received -->
-                <StackPanel Grid.Row="3" Margin="0,0,0,12">
-                    <TextBlock Text="Cash Received ($):" FontWeight="SemiBold" Margin="0,0,0,6" FontSize="14" Foreground="#334155"/>
-                    <TextBox Text="{Binding CashReceived, UpdateSourceTrigger=PropertyChanged, StringFormat=F2}" FontSize="22" FontWeight="Bold" Padding="10,6"/>
-                </StackPanel>
-
-                <!-- Change Due -->
-                <Border Grid.Row="4" Background="#F8FAFC" CornerRadius="8" Padding="14" Margin="0,0,0,16" BorderBrush="#E2E8F0" BorderThickness="1">
-                    <StackPanel>
-                        <TextBlock Text="Change Due:" FontSize="12" Foreground="#64748B"/>
-                        <TextBlock Text="{Binding ChangeGiven, StringFormat=${0:F2}}" FontSize="26" FontWeight="Bold" Foreground="#2563EB"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Status Message -->
-                <TextBlock Grid.Row="5" Text="{Binding StatusMessage}" TextWrapping="Wrap" FontSize="13" FontWeight="SemiBold" 
-                           Foreground="#E67E22" Margin="0,10"/>
-
-                <!-- Action Buttons -->
-                <Button Grid.Row="6" Content="✅ COMPLETE SALE &amp; PRINT" Command="{Binding CompleteSaleCommand}" 
-                        Background="#16A34A" Foreground="White" FontSize="16" FontWeight="Bold" 
-                        Padding="0,14" Margin="0,0,0,10" Cursor="Hand" BorderThickness="0"/>
-
-                <Button Grid.Row="7" Content="Clear Cart" Command="{Binding ClearCartCommand}" 
-                        Background="#EF4444" Foreground="White" FontSize="13" 
-                        Padding="0,8" Cursor="Hand" BorderThickness="0"/>
             </Grid>
         </Border>
+    </Grid>
+
+    <!-- ======================================================== -->
+    <!-- FULL-WINDOW MODAL OVERLAYS (NO MARGIN CLIPPING)          -->
+    <!-- ======================================================== -->
+
+    <!-- 1. Quick Register Member Modal Overlay -->
+    <Grid Background="#990F172A" 
+          Visibility="{Binding IsQuickRegisterOpen, Converter={StaticResource BoolToVisConverter}}"
+          Panel.ZIndex="1000">
+            <Border Background="White" CornerRadius="14" Padding="28,24" Width="440" 
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    BorderBrush="#CBD5E1" BorderThickness="1">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <Border Background="#EFF6FF" CornerRadius="10" Width="42" Height="42" Margin="0,0,12,0">
+                            <TextBlock Text="👤" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Quick Member Registration" FontSize="16" FontWeight="Bold" Foreground="#0F172A"/>
+                            <TextBlock Text="Register shopper &amp; immediately link to cart" FontSize="11" Foreground="#64748B"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <TextBlock Text="PHONE NUMBER (MEMBER ID)" FontSize="11" FontWeight="Bold" Foreground="#475569" Margin="0,0,0,6"/>
+                    <TextBox Text="{Binding QuickRegisterPhone, UpdateSourceTrigger=PropertyChanged}" 
+                             FontSize="14" FontWeight="Bold" Padding="10,8" Margin="0,0,0,14" 
+                             BorderBrush="#CBD5E1" BorderThickness="1"/>
+
+                    <TextBlock Text="CUSTOMER FULL NAME" FontSize="11" FontWeight="Bold" Foreground="#475569" Margin="0,0,0,6"/>
+                    <TextBox Text="{Binding QuickRegisterName, UpdateSourceTrigger=PropertyChanged}" 
+                             FontSize="14" Padding="10,8" Margin="0,0,0,24" 
+                             BorderBrush="#CBD5E1" BorderThickness="1"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="Cancel" Command="{Binding CloseQuickRegisterCommand}"
+                                Style="{StaticResource ModernFlatButtonStyle}" 
+                                Background="#F1F5F9" Foreground="#475569" Height="42" Margin="0,0,6,0"/>
+                        <Button Grid.Column="1" Content="✓ Save &amp; Attach" Command="{Binding SaveQuickRegisterCommand}"
+                                Style="{StaticResource ModernFlatButtonStyle}" 
+                                Background="#10B981" Foreground="White" Height="42" Margin="6,0,0,0"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- 2. Bakong KHQR Payment Modal Overlay                  -->
+        <!-- ======================================================== -->
+        <Grid Background="#990F172A" 
+              Visibility="{Binding IsKhqrModalOpen, Converter={StaticResource BoolToVisConverter}}"
+              Panel.ZIndex="1050">
+            <Border Background="White" CornerRadius="16" Width="440" 
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    BorderBrush="#CBD5E1" BorderThickness="1" SnapsToDevicePixels="True">
+                <StackPanel>
+                    <!-- Official KHQR Red Header Banner -->
+                    <Border Background="#D32F2F" CornerRadius="15,15,0,0" Padding="20,14">
+                        <DockPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Background="White" CornerRadius="6" Padding="6,3" Margin="0,0,10,0">
+                                    <TextBlock Text="KHQR" FontWeight="ExtraBold" FontSize="14" Foreground="#D32F2F"/>
+                                </Border>
+                                <TextBlock Text="Bakong Payment" FontSize="16" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Button Content="✕" Command="{Binding CloseKhqrModalCommand}" 
+                                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Foreground="White" Background="Transparent" BorderThickness="0" 
+                                    FontSize="16" FontWeight="Bold" Cursor="Hand" Width="28" Height="28"/>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Content Body -->
+                    <StackPanel Margin="28,20">
+                        <!-- Store Name Display -->
+                        <TextBlock Text="{Binding KhqrStoreName}" FontSize="18" FontWeight="ExtraBold" Foreground="#0F172A" HorizontalAlignment="Center"/>
+
+                        <!-- Account & Currency Switcher Row -->
+                        <Grid Margin="0,8,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Bakong Account ID input -->
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="ID: " FontSize="12" FontWeight="SemiBold" Foreground="#64748B" VerticalAlignment="Center"/>
+                                <Border Background="#F1F5F9" CornerRadius="6" BorderBrush="#CBD5E1" BorderThickness="1" Padding="4,2">
+                                    <TextBox Text="{Binding KhqrBakongId, UpdateSourceTrigger=PropertyChanged}" 
+                                             BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center"
+                                             FontSize="12" FontWeight="Bold" Foreground="#1E293B" Width="150"/>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Currency Switcher Toggle -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="$ USD" Command="{Binding SetKhqrUsdCommand}"
+                                        Style="{StaticResource ModernFlatButtonStyle}"
+                                        Background="#2563EB" Foreground="White"
+                                        FontSize="11" Padding="8,4" Margin="0,0,4,0" Height="28"/>
+                                <Button Content="៛ KHR" Command="{Binding SetKhqrKhrCommand}"
+                                        Style="{StaticResource ModernFlatButtonStyle}"
+                                        Background="#F1F5F9" Foreground="#334155"
+                                        FontSize="11" Padding="8,4" Height="28"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Dynamic QR Code Display -->
+                        <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="2" CornerRadius="12" 
+                                Padding="12" Width="260" Height="260" HorizontalAlignment="Center">
+                            <Image Source="{Binding KhqrImageSource}" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Uniform"/>
+                        </Border>
+
+                        <!-- Total Due Amount -->
+                        <Border Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1" CornerRadius="8" 
+                                Padding="14,8" Margin="0,16,0,12" HorizontalAlignment="Center" Width="260">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="TOTAL AMOUNT" FontSize="10" FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding KhqrAmountDisplay}" FontSize="24" FontWeight="ExtraBold" Foreground="#B91C1C" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Customer instruction -->
+                        <TextBlock Text="Scan with ABA, ACLEDA, Wing, or any Bakong App" 
+                                   FontSize="11" FontWeight="SemiBold" Foreground="#64748B" HorizontalAlignment="Center" Margin="0,0,0,18"/>
+
+                        <!-- Action Buttons -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="✕ Cancel / Pay Cash" Command="{Binding CloseKhqrModalCommand}"
+                                    Style="{StaticResource ModernFlatButtonStyle}" 
+                                    Background="#F1F5F9" Foreground="#475569" Height="42" Margin="0,0,6,0" FontSize="12"/>
+                            <Button Grid.Column="1" Content="✅ Payment Received" Command="{Binding ConfirmKhqrPaymentCommand}"
+                                    Style="{StaticResource ModernFlatButtonStyle}" 
+                                    Background="#10B981" Foreground="White" Height="42" Margin="6,0,0,0" FontSize="12"/>
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ========================================== -->
+        <!-- 4. PAYMENT SUCCESSFUL ALERT MODAL DIALOG   -->
+        <!-- ========================================== -->
+        <Grid Background="#900F172A" Visibility="{Binding IsPaymentSuccessModalOpen, Converter={StaticResource BoolToVisConverter}}" Panel.ZIndex="2000">
+            <Border Background="White" CornerRadius="16" Width="440" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    BorderBrush="#CBD5E1" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect Color="#0F172A" BlurRadius="30" ShadowDepth="10" Opacity="0.35" Direction="270"/>
+                </Border.Effect>
+                <StackPanel>
+                    <!-- Header with Emerald Checkmark -->
+                    <Border Background="#10B981" CornerRadius="16,16,0,0" Padding="24,18">
+                        <Grid>
+                            <Button Content="✕" Command="{Binding ClosePaymentSuccessModalCommand}"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-6,-6,0"
+                                    Foreground="White" Background="Transparent" BorderThickness="0"
+                                    FontSize="16" FontWeight="Bold" Cursor="Hand" Width="28" Height="28"
+                                    ToolTip="Close (Esc)"/>
+                            <StackPanel HorizontalAlignment="Center">
+                                <!-- Circular Checkmark Badge -->
+                                <Border Background="White" CornerRadius="30" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,10">
+                                    <TextBlock Text="✅" FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="PAYMENT SUCCESSFUL!" FontSize="20" FontWeight="ExtraBold" Foreground="White" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Sale completed &amp; recorded successfully" FontSize="12" Foreground="#D1FAE5" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Content Body -->
+                    <StackPanel Margin="28,20,28,24">
+                        <!-- Total Paid Box -->
+                        <Border Background="#ECFDF5" BorderBrush="#A7F3D0" BorderThickness="1.5" CornerRadius="10" Padding="16,12" Margin="0,0,0,16">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="TOTAL AMOUNT PAID" FontSize="11" FontWeight="Bold" Foreground="#047857" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding LastTotalPaidDisplay}" FontSize="28" FontWeight="ExtraBold" Foreground="#065F46" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Transaction Audit Details Card -->
+                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,16">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Receipt # -->
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Receipt #:" FontSize="12" Foreground="#64748B" FontWeight="Medium" Margin="0,2"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LastReceiptNumber}" FontSize="12" FontWeight="Bold" Foreground="#0F172A" HorizontalAlignment="Right" Margin="0,2"/>
+
+                                <!-- Payment Method -->
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Method:" FontSize="12" Foreground="#64748B" FontWeight="Medium" Margin="0,2"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LastPaymentMethod}" FontSize="12" FontWeight="Bold" Foreground="#2563EB" HorizontalAlignment="Right" Margin="0,2"/>
+
+                                <!-- Customer -->
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Customer:" FontSize="12" Foreground="#64748B" FontWeight="Medium" Margin="0,2"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding LastCustomerSummary}" FontSize="12" FontWeight="SemiBold" Foreground="#334155" HorizontalAlignment="Right" Margin="0,2"/>
+
+                                <!-- Points Earned -->
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Loyalty Points:" FontSize="12" Foreground="#64748B" FontWeight="Medium" Margin="0,2"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding LastLoyaltyPointsEarned}" FontSize="12" FontWeight="Bold" Foreground="#10B981" HorizontalAlignment="Right" Margin="0,2"/>
+
+                                <!-- Time -->
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="Timestamp:" FontSize="11" Foreground="#94A3B8" Margin="0,2"/>
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding LastSaleTimeDisplay}" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Right" Margin="0,2"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Action Buttons -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0" Content="🖨️ Print Receipt" Command="{Binding PrintLastReceiptCommand}"
+                                    Style="{StaticResource ModernFlatButtonStyle}"
+                                    Background="#F1F5F9" Foreground="#334155" Height="44" Padding="16,0" Margin="0,0,10,0" FontSize="13"/>
+
+                            <Button Grid.Column="1" Content="✅ Done / Start New Sale" Command="{Binding ClosePaymentSuccessModalCommand}"
+                                    Style="{StaticResource ModernFlatButtonStyle}"
+                                    Background="#10B981" Foreground="White" Height="44" FontSize="14" FontWeight="Bold"
+                                    IsDefault="True"/>
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ======================================================== -->
+        <!-- 3. CASH DRAWER SHIFT GATE MODAL DIALOG OVERLAY           -->
+        <!-- ======================================================== -->
+        <Grid Background="#990F172A" 
+              Visibility="{Binding IsShiftGateOpen, Converter={StaticResource BoolToVisConverter}}" 
+              Panel.ZIndex="1500">
+            <Border Background="White" CornerRadius="16" Width="460" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    BorderBrush="#CBD5E1" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect Color="#0F172A" BlurRadius="30" ShadowDepth="10" Opacity="0.35" Direction="270"/>
+                </Border.Effect>
+                <StackPanel>
+                    <!-- Header Banner -->
+                    <Border Background="#F59E0B" CornerRadius="16,16,0,0" Padding="24,18">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Border Background="White" CornerRadius="30" Width="52" Height="52" HorizontalAlignment="Center" Margin="0,0,0,10">
+                                <TextBlock Text="💵" FontSize="26" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="CASH DRAWER SHIFT REQUIRED" FontSize="18" FontWeight="ExtraBold" Foreground="White" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Start your shift and declare opening cash float" FontSize="12" Foreground="#FEF3C7" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Body Content -->
+                    <StackPanel Margin="28,20,28,24">
+                        <!-- Information Note -->
+                        <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="ℹ️ Cash Drawer Audit Protection" FontWeight="Bold" FontSize="12" Foreground="#1D4ED8" Margin="0,0,0,2"/>
+                                <TextBlock Text="To ensure drawer balancing and prevent discrepancies, an open shift is required before ringing up sales. Please enter the cash float in your register till."
+                                           FontSize="11" Foreground="#475569" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Cashier info card -->
+                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,16">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="👤 Cashier on Duty:" FontSize="12" Foreground="#64748B" FontWeight="Medium"/>
+                                <TextBlock Grid.Column="1" Text="{Binding ActiveShiftCashierDisplay}" FontSize="12" FontWeight="Bold" Foreground="#0F172A" HorizontalAlignment="Right"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Starting Cash Float Input -->
+                        <StackPanel Margin="0,0,0,14">
+                            <TextBlock Text="OPENING CASH FLOAT (USD)" FontSize="11" FontWeight="Bold" Foreground="#475569" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding OpeningFloatInput, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource EmptyToZeroConverter}, StringFormat='{}{0:F2}'}" 
+                                     Height="42" FontSize="16" FontWeight="Bold" Padding="10,0" VerticalContentAlignment="Center"
+                                     Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1"/>
+                        </StackPanel>
+
+                        <!-- Quick Presets -->
+                        <StackPanel Margin="0,0,0,20">
+                            <TextBlock Text="Quick Float Presets:" FontSize="11" Foreground="#64748B" Margin="0,0,0,6"/>
+                            <UniformGrid Columns="4">
+                                <Button Content="$20.00" Command="{Binding SetFloatPresetCommand}" CommandParameter="20.00"
+                                        Style="{StaticResource ModernFlatButtonStyle}" Background="#F1F5F9" Foreground="#334155" Height="32" Padding="0" Margin="0,0,4,0" FontSize="11"/>
+                                <Button Content="$50.00" Command="{Binding SetFloatPresetCommand}" CommandParameter="50.00"
+                                        Style="{StaticResource ModernFlatButtonStyle}" Background="#F1F5F9" Foreground="#334155" Height="32" Padding="0" Margin="2,0" FontSize="11"/>
+                                <Button Content="$100.00" Command="{Binding SetFloatPresetCommand}" CommandParameter="100.00"
+                                        Style="{StaticResource ModernFlatButtonStyle}" Background="#F1F5F9" Foreground="#334155" Height="32" Padding="0" Margin="2,0" FontSize="11"/>
+                                <Button Content="$200.00" Command="{Binding SetFloatPresetCommand}" CommandParameter="200.00"
+                                        Style="{StaticResource ModernFlatButtonStyle}" Background="#F1F5F9" Foreground="#334155" Height="32" Padding="0" Margin="4,0,0,0" FontSize="11"/>
+                            </UniformGrid>
+                        </StackPanel>
+
+                        <!-- Action Buttons -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="1.4*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="Dismiss / View POS" Command="{Binding CloseShiftGateCommand}"
+                                    Style="{StaticResource ModernFlatButtonStyle}" Background="#F1F5F9" Foreground="#64748B" Height="44" Margin="0,0,6,0" FontSize="12"/>
+                            <Button Grid.Column="1" Content="▶ Start Shift Now" Command="{Binding OpenShiftFromPosCommand}"
+                                    Style="{StaticResource ModernFlatButtonStyle}" Background="#10B981" Foreground="White" Height="44" Margin="6,0,0,0" FontSize="13" FontWeight="Bold"/>
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SmallMartApp.Core.Common;
 using SmallMartApp.Core.Features.Sales;
 using SmallMartApp.Core.Features.Shifts;
@@ -68,10 +68,12 @@ public class ShiftService : IShiftService
         return Result<CashierShift>.Success(shift);
     }
 
-    public async Task<List<CashierShift>> GetRecentShiftsAsync(int count = 10)
+    public async Task<List<CashierShift>> GetRecentShiftsAsync(int count = 100)
     {
         return await _context.CashierShifts
+            .AsNoTracking()
             .Include(s => s.User)
+            .Include(s => s.Sales)
             .OrderByDescending(s => s.StartTime)
             .Take(count)
             .ToListAsync();
