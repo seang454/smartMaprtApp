@@ -243,6 +243,171 @@ When the application starts, the **Login Window** appears. Use either of the pre
 
 ---
 
+## 🛠️ How to Create This Project From Scratch (Step-by-Step Tutorial)
+
+If you are recreating or explaining this architecture for a course or team project, follow these complete setup steps:
+
+### Step 1: Solution & Project Scaffolding
+Create the directory and initialize the .NET solution with Clean Architecture layers:
+
+```powershell
+# 1. Create root directory
+mkdir SmallMartApp
+cd SmallMartApp
+
+# 2. Create the main solution file
+dotnet new sln -n SmallMartApp
+
+# 3. Create Directory.Build.props to enforce C# 12 and nullable references across all projects
+Set-Content Directory.Build.props @"
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>12.0</LangVersion>
+  </PropertyGroup>
+</Project>
+"@
+
+# 4. Create the 3 architectural layers + 1 test project
+dotnet new classlib -o "src/01. SmallMartApp.Core"
+dotnet new classlib -o "src/02. SmallMartApp.Infrastructure"
+dotnet new wpf -o "src/03. SmallMartApp.UI"
+dotnet new xunit -o "tests/SmallMartApp.Tests"
+
+# 5. Add all projects to the solution
+dotnet sln add "src/01. SmallMartApp.Core"
+dotnet sln add "src/02. SmallMartApp.Infrastructure"
+dotnet sln add "src/03. SmallMartApp.UI"
+dotnet sln add "tests/SmallMartApp.Tests"
+```
+
+---
+
+### Step 2: Establish Inward Clean Architecture Dependencies
+
+Enforce strict inward dependency flow (UI $\rightarrow$ Infrastructure $\rightarrow$ Core):
+
+```powershell
+# Infrastructure depends only on Core
+dotnet add "src/02. SmallMartApp.Infrastructure" reference "src/01. SmallMartApp.Core"
+
+# UI depends on Core and Infrastructure
+dotnet add "src/03. SmallMartApp.UI" reference "src/01. SmallMartApp.Core"
+dotnet add "src/03. SmallMartApp.UI" reference "src/02. SmallMartApp.Infrastructure"
+
+# Tests depend on Core and Infrastructure
+dotnet add "tests/SmallMartApp.Tests" reference "src/01. SmallMartApp.Core"
+dotnet add "tests/SmallMartApp.Tests" reference "src/02. SmallMartApp.Infrastructure"
+```
+
+---
+
+### Step 3: Install Required NuGet Packages
+
+Install the production packages required for database persistence, MVVM, and QR generation:
+
+```powershell
+# 1. Infrastructure Packages (EF Core SQL Server, SQLite, QRCoder)
+cd "src/02. SmallMartApp.Infrastructure"
+dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 8.0.11
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite --version 8.0.11
+dotnet add package QRCoder --version 1.8.0
+cd ../..
+
+# 2. UI Packages (CommunityToolkit.Mvvm & Microsoft.Extensions.Hosting)
+cd "src/03. SmallMartApp.UI"
+dotnet add package CommunityToolkit.Mvvm --version 8.3.2
+dotnet add package Microsoft.Extensions.Hosting --version 8.0.1
+cd ../..
+
+# 3. Test Packages (xUnit & EF Core in-memory verification)
+cd "tests/SmallMartApp.Tests"
+dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 8.0.11
+dotnet add package Microsoft.NET.Test.Sdk --version 17.8.0
+dotnet add package xunit --version 2.5.3
+dotnet add package xunit.runner.visualstudio --version 2.5.3
+cd ../..
+```
+
+---
+
+### Step 4: Implement Core Domain Layer (`SmallMartApp.Core`)
+
+1. **Common abstractions:**
+   - Create `Common/BaseEntity.cs` containing `Id (int)` and `CreatedAt (DateTime)`.
+   - Create `Common/Result.cs` providing generic `Result<T>` and `Result.Success() / Result.Failure()` patterns for deterministic error handling without runtime exceptions.
+2. **Hardware abstractions:**
+   - Define `Hardware/IBarcodeScanner.cs` (event `BarcodeScanned`).
+   - Define `Hardware/IReceiptPrinter.cs` (`PrintReceiptAsync`).
+3. **Vertical Slice Feature Domain Models:**
+   - `Features/Products/`: `Category.cs`, `Product.cs`, `IProductService.cs`, `ICategoryService.cs`.
+   - `Features/Suppliers/`: `Supplier.cs`, `PurchaseOrder.cs`, `PurchaseOrderItem.cs`, `ISupplierService.cs`.
+   - `Features/Customers/`: `Customer.cs`, `ICustomerService.cs`.
+   - `Features/Auth/`: `User.cs`, `UserRole.cs` (Admin, Cashier), `IAuthService.cs`, `IUserService.cs`.
+   - `Features/Shifts/`: `CashierShift.cs`, `ShiftStatus.cs` (Open, Closed), `IShiftService.cs`.
+   - `Features/Sales/`: `Sale.cs`, `SaleItem.cs`, `PaymentMethod.cs` (Cash, KHQR, Card), `ISalesService.cs`.
+   - `Features/Payments/`: `IKhqrService.cs` (KHQR generation interface).
+   - `Features/Dashboard/`: `IDashboardService.cs`.
+
+---
+
+### Step 5: Implement Infrastructure Layer (`SmallMartApp.Infrastructure`)
+
+1. **Persistence with EF Core (`Persistence/SmallMartDbContext.cs`):**
+   - Inherit from `DbContext`.
+   - Declare `DbSet<T>` for all 10 entity models.
+   - Configure relationships, unique indexes (`Barcode`, `PhoneNumber`, `Username`), decimal precisions `(18,2)`, and initial seed records in `OnModelCreating`.
+2. **Hardware Peripherals:**
+   - Implement `Hardware/MockBarcodeScanner.cs` to trigger barcode events programmatically for testing.
+   - Implement `Hardware/FakeReceiptPrinter.cs` for file/console logging.
+3. **Service Implementations:**
+   - `Services/ProductService.cs`: Queries products and checks low stock thresholds.
+   - `Services/SalesService.cs`: Coordinates atomic sales transactions, stock deduction validation, customer loyalty point calculation, and shift assignment.
+   - `Services/ShiftService.cs`: Manages opening cash float, active shift status, and closing cash discrepancy math (`Discrepancy = ActualCash - ExpectedCash`).
+   - `Services/KhqrService.cs`: Generates National Bank of Cambodia (NBC) Bakong TLV payloads with CRC-16 CCITT validation and QR bitmap rasterization.
+4. **IoC Dependency Injection Extension (`DependencyInjection.cs`):**
+   - Create `AddInfrastructure(this IServiceCollection services, string connectionString)` to register `SmallMartDbContext` with `ServiceLifetime.Transient` (preventing WPF multi-threading concurrency issues) and bind all service interfaces to their implementations.
+
+---
+
+### Step 6: Implement WPF Presentation Layer (`SmallMartApp.UI`)
+
+1. **Configuration (`appsettings.json`):**
+   - Set up `DefaultConnection` pointing to SQL Server Express or LocalDB.
+   - In `SmallMartApp.UI.csproj`, ensure `<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>` is set on `appsettings.json`.
+2. **Bootstrapper (`App.xaml.cs`):**
+   - Build a generic host via `Host.CreateDefaultBuilder()`.
+   - Register configuration, Infrastructure, ViewModels, and Windows into the `IServiceCollection`.
+   - In `OnStartup()`, invoke `await db.Database.EnsureCreatedAsync()` to auto-migrate the database.
+   - Launch `LoginWindow.Show()`.
+3. **ViewModels (`CommunityToolkit.Mvvm`):**
+   - Inherit from `ObservableObject`.
+   - Use `[ObservableProperty]` on backing fields (generates reactive `INotifyPropertyChanged` properties).
+   - Use `[RelayCommand]` on methods (generates async `ICommand` handlers with `CanExecute` validation).
+   - Implement `MainViewModel` with `CurrentView` property to handle dynamic screen switching.
+   - Implement `PosCheckoutViewModel`, `ProductListViewModel`, `ShiftViewModel`, `CategoryViewModel`, `CustomerViewModel`, `SupplierViewModel`, `UserViewModel`, `LoginViewModel`.
+4. **Views & DataTemplates:**
+   - Create modular XAML `UserControl`s for each feature view.
+   - In `App.xaml`, declare `DataTemplate` mappings connecting each ViewModel type directly to its corresponding View UserControl.
+   - Implement `WpfReceiptPrinter` to open an interactive thermal receipt preview window upon sale completion.
+
+---
+
+### Step 7: Automated Testing & Verification (`SmallMartApp.Tests`)
+
+1. Create `SalesServiceTests.cs` using **xUnit** and **In-Memory DbContext**:
+   - Verify cart subtotal, discount calculation, and change mathematics.
+   - Verify that confirming a checkout decrements stock quantities atomically.
+   - Verify that invalid barcodes or insufficient cash throw deterministic `Result.Failure` messages instead of crashing.
+2. Run tests to confirm integrity:
+   ```powershell
+   dotnet test SmallMartApp.sln
+   ```
+
+---
+
 ## ❓ Troubleshooting & FAQs
 
 ### Q1: "Cannot open database 'SmallMartDb' requested by the login" or SQL Connection Timeout
