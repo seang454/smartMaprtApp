@@ -243,6 +243,140 @@ When the application starts, the **Login Window** appears. Use either of the pre
 
 ---
 
+## 🖥️ UI Workflow & User Journey (Visual Flow)
+
+SmallMartApp's user interface is designed around two primary user personas: **Frontline Cashiers** (optimized for speed, keyboard shortcuts, and checkout ergonomics) and **Store Managers / Admins** (optimized for audit visibility, inventory restocking, and financial oversight).
+
+### 1. Visual End-to-End Workflow Diagram
+
+```mermaid
+flowchart TD
+    Start(["🚀 Launch SmallMartApp"]) --> Login["🔑 Login Window"]
+    Login --> AuthCheck{"Valid Credentials?"}
+    AuthCheck -- "No" --> LoginError["❌ Display Toast Error"] --> Login
+    AuthCheck -- "Yes" --> RoleCheck{"Check User Role"}
+
+    %% Cashier Path
+    RoleCheck -- "Role: Cashier" --> ShiftCheck{"Is Shift Active?"}
+    ShiftCheck -- "No" --> ShiftView["🕒 Shift Screen: Enter Starting Cash Float"]
+    ShiftView --> OpenShiftBtn["Click 'Open Shift'"] --> PosView["🛒 POS Checkout Screen"]
+    ShiftCheck -- "Yes" --> PosView
+
+    subgraph POS_FLOW ["Frontline POS Checkout Flow"]
+        PosView --> AddItem["Scan Barcode / Click Product Card"]
+        AddItem --> Cart["Cart: Auto-Calculate Subtotal & Taxes"]
+        Cart --> LoyaltyOpt{"Customer Phone?"}
+        LoyaltyOpt -- "Yes" --> ApplyLoyalty["Link Customer & Apply Points"]
+        LoyaltyOpt -- "No" --> SelectPayment
+        ApplyLoyalty --> SelectPayment{"Choose Payment Method"}
+
+        SelectPayment -- "Cash" --> CashModal["💵 Cash Payment: Enter Cash Received\nAuto-Calculate Change Due"]
+        SelectPayment -- "KHQR" --> KhqrModal["📱 KHQR Payment: Display NBC Dynamic QR\nCRC-16 Validated"]
+
+        CashModal --> ConfirmSale["Click 'Complete Checkout'"]
+        KhqrModal --> ConfirmSale
+
+        ConfirmSale --> AtomicTx["⚡ Atomic Transaction:\n1. Decrement Stock\n2. Accrue Points\n3. Record Shift Float\n4. Commit Sale"]
+        AtomicTx --> ReceiptPopup["🧾 Virtual Thermal Receipt Window Pops Up"]
+        ReceiptPopup --> ResetCart["Cart Clears -> Ready for Next Customer"]
+    end
+
+    POS_FLOW --> EndShiftPrompt{"End of Shift?"}
+    EndShiftPrompt -- "Yes" --> CloseShiftView["💰 Shift Screen: Enter Counted Drawer Cash"]
+    CloseShiftView --> VarianceAudit["System Calculates Variance:\nDiscrepancy = Actual - Expected"]
+    VarianceAudit --> ShiftClosed["Shift Closed & Audited"] --> Logout["🚪 Logout"]
+
+    %% Admin Path
+    RoleCheck -- "Role: Admin" --> AdminDash["📊 Dashboard (Live KPIs & Revenue)"]
+    AdminDash --> AdminTabs{"Admin Navigation Tabs"}
+    AdminTabs --> NavProducts["📦 Products: Add/Edit, Price & Stock Adjustments"]
+    AdminTabs --> NavCategories["🏷️ Categories: Manage Department Classifications"]
+    AdminTabs --> NavSuppliers["🚚 Suppliers: Restock Orders & Vendor Contacts"]
+    AdminTabs --> NavCustomers["👥 Customers: Loyalty Accounts & Purchase History"]
+    AdminTabs --> NavShifts["🕒 Shifts: Real-time Cash Drawer Audit Logs"]
+    AdminTabs --> NavUsers["👤 Users: Staff Roles, Shifts & Credentials"]
+    AdminTabs --> NavPOS["🛒 POS Checkout (Admin can also sell)"]
+
+    ShiftClosed --> Login
+    Logout --> Login
+```
+
+---
+
+### 2. Detailed Screen-by-Screen User Journey
+
+#### 🔹 Screen 1: User Authentication (`LoginWindow`)
+1. The app boots to a clean login modal.
+2. Enter username (`admin` or `cashier1`) and password.
+3. If credentials match and `IsActive == true`:
+   - Cashiers are automatically routed to the **Shift / POS view**. Administrative management tabs are automatically hidden.
+   - Admins are routed to the **Analytics Dashboard** with full access to all 9 navigation tabs.
+
+#### 🔹 Screen 2: Cashier Shift Register (`ShiftView`)
+*Before selling items, a cashier must open an official shift to guarantee cash accountability:*
+1. **Starting the Shift:** Enter the initial cash float in the drawer (e.g. `$50.00`) and click **"Open Shift"**.
+2. **Real-Time Shift Tracker:** The top status bar indicates the current cashier name, shift start timestamp, and running `ExpectedCash` balance.
+3. **Closing the Shift:** At the end of the work period:
+   - Cashier enters the physically counted cash (`ActualCash`).
+   - System calculates: `Discrepancy = ActualCash - ExpectedCash`.
+   - The shift is permanently marked as `Closed` in the database, preventing unauthorized retroactive modifications.
+
+#### 🔹 Screen 3: Point of Sale (POS) Checkout (`PosCheckoutView`)
+*Designed for fast, high-volume frontline transactions:*
+1. **Adding Products:**
+   - **Barcode Entry:** Type or scan a barcode into the search input. Press **Enter** to instantly add the item.
+   - **Visual Grid:** Click on any category badge to filter products, then click a product card to increment its quantity in the cart.
+2. **Cart Management:**
+   - Adjust quantities using `+` and `-` buttons.
+   - Remove items via the delete button.
+   - Real-time updates show unit prices, quantities, and live running subtotals.
+3. **Customer Loyalty Lookup:**
+   - Type the customer's phone number into the loyalty lookup bar.
+   - If registered, the customer's name and existing points appear. Every dollar spent automatically accrues 1 loyalty point upon sale completion.
+
+#### 🔹 Screen 4: Payment Processing & Dual-Method Options
+1. **Cash Payment Mode:**
+   - Enter the dollar amount handed by the customer in **Cash Received**.
+   - The UI automatically calculates and displays **Change Due** in large, clear green text.
+2. **Bakong KHQR Payment Mode:**
+   - Click the **KHQR** payment option.
+   - A modal generates a dynamic National Bank of Cambodia (NBC) KHQR code embedding the exact transaction amount and store merchant account.
+   - Customer scans using any Cambodian banking app (Bakong, ABA Mobile, ACLEDA, etc.).
+
+#### 🔹 Screen 5: Virtual Thermal Receipt Simulator (`WpfReceiptPrinter`)
+1. Once **"Complete Checkout"** is clicked, an atomic database transaction runs:
+   - Decrements physical product inventory from `Products`.
+   - Records sales line items in `SaleItems`.
+   - Updates `ExpectedCash` on the active cashier shift.
+   - Awards loyalty points to the customer.
+2. An interactive **Virtual 80mm ESC/POS Thermal Receipt** appears on screen showing:
+   - Store header, address, and receipt serial number.
+   - Itemized item list with unit costs and line totals.
+   - Payment method breakdown and change given.
+   - Accrued customer loyalty points.
+   - Barcode graphic ready for printing or re-scanning.
+
+#### 🔹 Screen 6: Inventory & Stock Threshold Management (`ProductListView`)
+*(Accessible by Admin)*
+1. **Product Catalog:** View all inventory items in a searchable, filterable data grid.
+2. **Low Stock Warnings:** Items whose `StockQuantity <= LowStockAlertThreshold` are highlighted with prominent warning badges (`⚠️ Low Stock`).
+3. **Product CRUD:** Add new inventory items, edit pricing (`CostPrice`, `SellPrice`), update stock counts, and assign suppliers and categories.
+
+#### 🔹 Screen 7: Management & Administrative Tabs
+*(Admin-Exclusive)*
+- **Dashboard (`DashboardView`):** Live KPI cards for Total Revenue, Total Orders, Active Cashiers, and Low Stock Alerts.
+- **Categories (`CategoryView`):** Manage product departments (Beverages, Snacks, Dairy, etc.).
+- **Suppliers (`SupplierView`):** Track vendor contact details, phone numbers, and past restocking purchase orders.
+- **Customers (`CustomerView`):** Manage customer profiles, phone numbers, and loyalty point totals.
+- **Purchases (`CustomerPurchaseHistoryView`):** Review chronological audit logs of all historical checkout receipts with full itemized drilldown.
+- **Users (`UserView`):** Manage system operators, assign roles (`Admin`, `Cashier`), working shifts, and reset passwords.
+
+#### 🔹 System-Wide Ergonomic Features
+- **Toast Alert System:** Real-time animated popups on the top-right notifying users of transaction success, low-stock warnings, or validation errors.
+- **Global Clipboard Copy:** Double-click or click-to-copy available on all table cells, receipt numbers, and barcodes across the entire application.
+
+---
+
 ## 🛠️ How to Create This Project From Scratch (Step-by-Step Tutorial)
 
 If you are recreating or explaining this architecture for a course or team project, follow these complete setup steps:
